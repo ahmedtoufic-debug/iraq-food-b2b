@@ -4,32 +4,35 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>منصة الغذاء B2B - العراق</title>
-    <!-- Tailwind CSS for Styling -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Supabase JS Library -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
         .modal {
-            display: none; 
-            position: fixed; 
-            z-index: 50; 
+            display: none;
+            position: fixed;
+            z-index: 50;
             left: 0;
             top: 0;
-            width: 100%; 
-            height: 100%; 
-            overflow: auto; 
-            background-color: rgba(0,0,0,0.4); 
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.5);
         }
         .modal-content {
             background-color: #fefefe;
-            margin: 10% auto; 
+            margin: 10% auto;
             padding: 20px;
             border: 1px solid #888;
-            width: 90%; 
+            width: 90%;
             max-width: 500px;
             border-radius: 8px;
             position: relative;
+            animation: modalopen 0.3s;
+        }
+        @keyframes modalopen {
+            from {opacity: 0; transform: translateY(-20px);}
+            to {opacity: 1; transform: translateY(0);}
         }
         .close {
             color: #aaa;
@@ -38,213 +41,220 @@
             font-weight: bold;
             cursor: pointer;
         }
-        .close:hover,
-        .close:focus {
-            color: black;
-            text-decoration: none;
-            cursor: pointer;
-        }
+        .close:hover { color: #000; }
         .active-section { display: block; }
         .hidden-section { display: none; }
+        .loading { opacity: 0.5; pointer-events: none; }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
     </style>
 </head>
 <body class="bg-gray-50 text-gray-800">
 
     <!-- Navbar -->
-    <nav class="bg-white shadow-md p-4">
-        <div class="container mx-auto flex justify-between items-center">
-            <div class="text-xl font-bold text-green-700">🍽️منصة الغذاء B2B</div>
-            <div class="space-x-4 space-x-reverse">
-                <a href="#" class="hover:text-green-600">الرئيسية</a>
-                <a href="#products" class="hover:text-green-600">المنتجات</a>
-                <a href="#dashboard" class="hover:text-green-600">لوحة التحكم</a>
+    <nav class="bg-white shadow-md p-4 sticky top-0 z-40">
+        <div class="container mx-auto flex justify-between items-center flex-wrap gap-2">
+            <div class="text-xl font-bold text-green-700">🍽️ منصة الغذاء B2B</div>
+            <div class="flex gap-4 items-center flex-wrap">
+                <a href="#" onclick="showSection('home')" class="hover:text-green-600">الرئيسية</a>
+                <a href="#products" onclick="showSection('home')" class="hover:text-green-600">المنتجات</a>
+                <a href="#" onclick="showSection('dashboard')" class="hover:text-green-600">لوحة التحكم</a>
                 <button onclick="openModal('loginModal')" class="text-green-700 font-bold">تسجيل الدخول</button>
                 <button onclick="openModal('registerModal')" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">إنشاء حساب</button>
             </div>
             <div class="flex items-center gap-4">
-                <button class="relative">
+                <button onclick="openModal('cartModal')" class="relative">
                     🛒
-                    <span class="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">0</span>
+                    <span id="cart-count" class="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">0</span>
                 </button>
-                <div class="text-sm">مستخدم</div>
-                <button class="text-red-500 text-sm">خروج</button>
+                <div id="user-info" class="text-sm hidden">
+                    <span id="user-name">مستخدم</span>
+                    <button onclick="logout()" class="text-red-500 text-sm mr-2">خروج</button>
+                </div>
             </div>
         </div>
     </nav>
 
-    <!-- Hero Section -->
-    <header class="bg-green-50 py-16 text-center">
-        <div class="container mx-auto px-4">
-            <h1 class="text-4xl font-bold mb-4 text-green-800">منصة B2B للمواد الغذائية - العراق</h1>
-            <p class="text-xl text-gray-600 mb-8">أفضل منصة لتجارة المواد الغذائية بالجملة في العراق. تواصل مع الموردين والعملاء بسهولة وأمان.</p>
-            <div class="flex justify-center gap-4">
-                <button class="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700">ابدأ الآن مجاناً</button>
-                <button class="border border-green-600 text-green-600 px-6 py-3 rounded-lg hover:bg-green-50">تصفح المنتجات</button>
+    <!-- Home Section -->
+    <section id="home-section" class="active-section">
+        <!-- Hero -->
+        <header class="bg-green-50 py-16 text-center">
+            <div class="container mx-auto px-4">
+                <h1 class="text-4xl font-bold mb-4 text-green-800">منصة B2B للمواد الغذائية - العراق</h1>
+                <p class="text-xl text-gray-600 mb-8">أفضل منصة لتجارة المواد الغذائية بالجملة في العراق</p>
+                <div class="flex justify-center gap-4 flex-wrap">
+                    <button onclick="showSection('dashboard')" class="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700">ابدأ الآن مجاناً</button>
+                    <button onclick="document.getElementById('products').scrollIntoView()" class="border border-green-600 text-green-600 px-6 py-3 rounded-lg hover:bg-green-50">تصفح المنتجات</button>
+                </div>
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-12 text-center">
+                    <div class="p-4 bg-white rounded shadow">
+                        <div id="stat-products" class="text-2xl font-bold text-green-600">0</div>
+                        <div class="text-gray-500">منتج متاح</div>
+                    </div>
+                    <div class="p-4 bg-white rounded shadow">
+                        <div id="stat-orders" class="text-2xl font-bold text-green-600">0</div>
+                        <div class="text-gray-500">طلب مكتمل</div>
+                    </div>
+                    <div class="p-4 bg-white rounded shadow">
+                        <div id="stat-suppliers" class="text-2xl font-bold text-green-600">0</div>
+                        <div class="text-gray-500">مورد مسجل</div>
+                    </div>
+                    <div class="p-4 bg-white rounded shadow">
+                        <div id="stat-clients" class="text-2xl font-bold text-green-600">0</div>
+                        <div class="text-gray-500">عميل نشط</div>
+                    </div>
+                </div>
             </div>
-            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-12 text-center">
-                <div class="p-4 bg-white rounded shadow">
-                    <div class="text-2xl font-bold text-green-600">0</div>
-                    <div class="text-gray-500">منتج متاح</div>
-                </div>
-                <div class="p-4 bg-white rounded shadow">
-                    <div class="text-2xl font-bold text-green-600">0</div>
-                    <div class="text-gray-500">طلب مكتمل</div>
-                </div>
-                <div class="p-4 bg-white rounded shadow">
-                    <div class="text-2xl font-bold text-green-600">0</div>
-                    <div class="text-gray-500">مورد مسجل</div>
-                </div>
-                <div class="p-4 bg-white rounded shadow">
-                    <div class="text-2xl font-bold text-green-600">0</div>
-                    <div class="text-gray-500">عميل نشط</div>
-                </div>
-            </div>
-        </div>
-    </header>
+        </header>
 
-    <!-- Features -->
-    <section class="py-12 container mx-auto px-4">
-        <h2 class="text-2xl font-bold mb-8 text-center">🏆 المنتجات المميزة</h2>
-        <div class="grid md:grid-cols-3 gap-8">
-            <div class="bg-white p-6 rounded-lg shadow hover:shadow-lg transition">
-                <div class="text-4xl mb-4">🚚</div>
-                <h3 class="font-bold text-xl mb-2">شحن سريع</h3>
-                <p class="text-gray-600">توصيل سريع وآمن لجميع المحافظات العراقية خلال 24-48 ساعة</p>
+        <!-- Features -->
+        <section class="py-12 container mx-auto px-4">
+            <h2 class="text-2xl font-bold mb-8 text-center">🏆 المنتجات المميزة</h2>
+            <div class="grid md:grid-cols-3 gap-8">
+                <div class="bg-white p-6 rounded-lg shadow hover:shadow-lg transition">
+                    <div class="text-4xl mb-4">🚚</div>
+                    <h3 class="font-bold text-xl mb-2">شحن سريع</h3>
+                    <p class="text-gray-600">توصيل سريع وآمن لجميع المحافظات العراقية خلال 24-48 ساعة</p>
+                </div>
+                <div class="bg-white p-6 rounded-lg shadow hover:shadow-lg transition">
+                    <div class="text-4xl mb-4">💰</div>
+                    <h3 class="font-bold text-xl mb-2">أسعار تنافسية</h3>
+                    <p class="text-gray-600">أفضل أسعار الجملة في السوق العراقي مع خصومات للطلبات الكبيرة</p>
+                </div>
+                <div class="bg-white p-6 rounded-lg shadow hover:shadow-lg transition">
+                    <div class="text-4xl mb-4">🔒</div>
+                    <h3 class="font-bold text-xl mb-2">دفع آمن</h3>
+                    <p class="text-gray-600">نظام دفع آمن ومتعدد الخيارات يضمن حماية معاملاتك</p>
+                </div>
             </div>
-            <div class="bg-white p-6 rounded-lg shadow hover:shadow-lg transition">
-                <div class="text-4xl mb-4">💰</div>
-                <h3 class="font-bold text-xl mb-2">أسعار تنافسية</h3>
-                <p class="text-gray-600">أفضل أسعار الجملة في السوق العراقي مع خصومات للطلبات الكبيرة</p>
+        </section>
+
+        <!-- Products -->
+        <section id="products" class="py-12 bg-gray-100">
+            <div class="container mx-auto px-4">
+                <div class="flex justify-between items-center mb-6 flex-wrap gap-2">
+                    <h2 class="text-2xl font-bold">📦 جميع المنتجات</h2>
+                    <div class="flex gap-2 overflow-x-auto">
+                        <button onclick="filterProducts('all')" class="bg-green-600 text-white px-4 py-1 rounded-full text-sm">جميع الفئات</button>
+                        <button onclick="filterProducts('grains')" class="bg-white text-gray-700 px-4 py-1 rounded-full text-sm border">الحبوب والأرز</button>
+                        <button onclick="filterProducts('spices')" class="bg-white text-gray-700 px-4 py-1 rounded-full text-sm border">البهارات</button>
+                        <button onclick="filterProducts('canned')" class="bg-white text-gray-700 px-4 py-1 rounded-full text-sm border">المعلبات</button>
+                        <button onclick="filterProducts('nuts')" class="bg-white text-gray-700 px-4 py-1 rounded-full text-sm border">المكسرات</button>
+                        <button onclick="filterProducts('oils')" class="bg-white text-gray-700 px-4 py-1 rounded-full text-sm border">الزيوت</button>
+                    </div>
+                </div>
+                <div id="products-loading" class="text-center py-8">
+                    <div class="animate-spin inline-block w-8 h-8 border-4 border-green-600 border-t-transparent rounded-full"></div>
+                    <p class="mt-2 text-gray-500">جاري تحميل المنتجات...</p>
+                </div>
+                <div id="products-grid" class="grid md:grid-cols-4 gap-6"></div>
+                <div id="products-error" class="hidden text-center py-8 text-red-500"></div>
             </div>
-            <div class="bg-white p-6 rounded-lg shadow hover:shadow-lg transition">
-                <div class="text-4xl mb-4">🔒</div>
-                <h3 class="font-bold text-xl mb-2">دفع آمن</h3>
-                <p class="text-gray-600">نظام دفع آمن ومتعدد الخيارات يضمن حماية معاملاتك</p>
-            </div>
-        </div>
+        </section>
     </section>
 
-    <!-- Products Section -->
-    <section id="products" class="py-12 bg-gray-100">
-        <div class="container mx-auto px-4">
-            <div class="flex justify-between items-center mb-6">
-                <h2 class="text-2xl font-bold">📦 جميع المنتجات</h2>
-                <div class="flex gap-2 overflow-x-auto">
-                    <button class="bg-green-600 text-white px-4 py-1 rounded-full text-sm">جميع الفئات</button>
-                    <button class="bg-white text-gray-700 px-4 py-1 rounded-full text-sm border">الحبوب والأرز</button>
-                    <button class="bg-white text-gray-700 px-4 py-1 rounded-full text-sm border">البهارات والتوابل</button>
-                    <button class="bg-white text-gray-700 px-4 py-1 rounded-full text-sm border">المعلبات</button>
-                    <button class="bg-white text-gray-700 px-4 py-1 rounded-full text-sm border">المكسرات</button>
-                    <button class="bg-white text-gray-700 px-4 py-1 rounded-full text-sm border">الزيوت</button>
-                </div>
-            </div>
-            <div class="grid md:grid-cols-4 gap-6" id="products-grid">
-                <!-- Products will be loaded here via JS -->
-                <div class="text-center text-gray-500 col-span-4">جاري تحميل المنتجات...</div>
-            </div>
-        </div>
-    </section>
-
-    <!-- Dashboard Section (Hidden by default) -->
-    <section id="dashboard" class="hidden-section py-12 container mx-auto px-4">
+    <!-- Dashboard Section -->
+    <section id="dashboard-section" class="hidden-section py-12 container mx-auto px-4">
         <h2 class="text-2xl font-bold mb-6">لوحة التحكم</h2>
-        <div class="grid md:grid-cols-4 gap-4 mb-8">
-            <div class="bg-white p-4 rounded shadow">
-                <div class="text-gray-500">إجمالي الطلبات</div>
-                <div class="text-2xl font-bold">0</div>
-            </div>
-            <div class="bg-white p-4 rounded shadow">
-                <div class="text-gray-500">الإيرادات (د.ع)</div>
-                <div class="text-2xl font-bold">0</div>
-            </div>
-            <div class="bg-white p-4 rounded shadow">
-                <div class="text-gray-500">المنتجات</div>
-                <div class="text-2xl font-bold">0</div>
-            </div>
-            <div class="bg-white p-4 rounded shadow">
-                <div class="text-gray-500">العملاء</div>
-                <div class="text-2xl font-bold">0</div>
-            </div>
-        </div>
-
-        <div class="grid md:grid-cols-2 gap-8">
-            <!-- Recent Orders -->
-            <div class="bg-white p-6 rounded shadow">
-                <h3 class="font-bold text-lg mb-4">📊 آخر الطلبات</h3>
-                <div class="overflow-x-auto">
-                    <table class="w-full text-sm text-right">
-                        <thead class="bg-gray-50">
-                            <tr>
-                                <th class="p-2">رقم الطلب</th>
-                                <th class="p-2">العميل</th>
-                                <th class="p-2">المبلغ</th>
-                                <th class="p-2">الحالة</th>
-                                <th class="p-2">التاريخ</th>
-                            </tr>
-                        </thead>
-                        <tbody id="orders-table-body">
-                            <!-- Orders loaded via JS -->
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-
-            <!-- Product Management -->
-            <div class="bg-white p-6 rounded shadow">
-                <div class="flex justify-between items-center mb-4">
-                    <h3 class="font-bold text-lg">📦 إدارة المنتجات</h3>
-                    <button onclick="openModal('addProductModal')" class="bg-green-600 text-white px-3 py-1 rounded text-sm">+ إضافة منتج</button>
-                </div>
-                <div class="overflow-x-auto">
-                    <table class="w-full text-sm text-right">
-                        <thead class="bg-gray-50">
-                            <tr>
-                                <th class="p-2">المنتج</th>
-                                <th class="p-2">السعر</th>
-                                <th class="p-2">الكمية</th>
-                                <th class="p-2">الفئة</th>
-                                <th class="p-2">إجراءات</th>
-                            </tr>
-                        </thead>
-                        <tbody id="products-table-body">
-                            <!-- Products loaded via JS -->
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
         
-        <!-- Clients Management -->
-        <div class="bg-white p-6 rounded shadow mt-8">
-            <h3 class="font-bold text-lg mb-4">👥 إدارة العملاء</h3>
-            <div class="overflow-x-auto">
-                <table class="w-full text-sm text-right">
-                    <thead class="bg-gray-50">
-                        <tr>
-                            <th class="p-2">الاسم</th>
-                            <th class="p-2">البريد</th>
-                            <th class="p-2">الهاتف</th>
-                            <th class="p-2">الطلبات</th>
-                            <th class="p-2">تاريخ التسجيل</th>
-                        </tr>
-                    </thead>
-                    <tbody id="clients-table-body">
-                        <!-- Clients loaded via JS -->
-                    </tbody>
-                </table>
-            </div>
+        <!-- Dashboard Tabs -->
+        <div class="flex gap-2 mb-6 overflow-x-auto">
+            <button onclick="showDashboardTab('overview')" class="dashboard-tab bg-green-600 text-white px-4 py-2 rounded">نظرة عامة</button>
+            <button onclick="showDashboardTab('products')" class="dashboard-tab bg-white text-gray-700 px-4 py-2 rounded border">إدارة المنتجات</button>
+            <button onclick="showDashboardTab('orders')" class="dashboard-tab bg-white text-gray-700 px-4 py-2 rounded border">الطلبات</button>
+            <button onclick="showDashboardTab('clients')" class="dashboard-tab bg-white text-gray-700 px-4 py-2 rounded border">العملاء</button>
+            <button onclick="showDashboardTab('settings')" class="dashboard-tab bg-white text-gray-700 px-4 py-2 rounded border">الإعدادات</button>
         </div>
 
-        <!-- Settings -->
-        <div class="bg-white p-6 rounded shadow mt-8">
-            <h3 class="font-bold text-lg mb-4">⚙️ إعدادات الحساب</h3>
-            <form class="grid md:grid-cols-2 gap-4">
-                <input type="text" placeholder="اسم الشركة" class="border p-2 rounded">
-                <input type="text" placeholder="رقم الهاتف" class="border p-2 rounded">
-                <input type="text" placeholder="العنوان" class="border p-2 rounded md:col-span-2">
-                <textarea placeholder="نبذة عن الشركة" class="border p-2 rounded md:col-span-2"></textarea>
-                <button type="button" class="bg-green-600 text-white px-4 py-2 rounded md:col-span-2">حفظ التغييرات</button>
-            </form>
+        <!-- Overview Tab -->
+        <div id="dashboard-overview" class="dashboard-content">
+            <div class="grid md:grid-cols-4 gap-4 mb-8">
+                <div class="bg-white p-4 rounded shadow">
+                    <div class="text-gray-500">إجمالي الطلبات</div>
+                    <div id="dash-total-orders" class="text-2xl font-bold">0</div>
+                </div>
+                <div class="bg-white p-4 rounded shadow">
+                    <div class="text-gray-500">الإيرادات (د.ع)</div>
+                    <div id="dash-revenue" class="text-2xl font-bold">0</div>
+                </div>
+                <div class="bg-white p-4 rounded shadow">
+                    <div class="text-gray-500">المنتجات</div>
+                    <div id="dash-products" class="text-2xl font-bold">0</div>
+                </div>
+                <div class="bg-white p-4 rounded shadow">
+                    <div class="text-gray-500">العملاء</div>
+                    <div id="dash-clients" class="text-2xl font-bold">0</div>
+                </div>
+            </div>
+
+            <div class="grid md:grid-cols-2 gap-8">
+                <div class="bg-white p-6 rounded shadow">
+                    <h3 class="font-bold text-lg mb-4">📊 آخر الطلبات</h3>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-sm text-right">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="p-2">رقم الطلب</th>
+                                    <th class="p-2">العميل</th>
+                                    <th class="p-2">المبلغ</th>
+                                    <th class="p-2">الحالة</th>
+                                    <th class="p-2">التاريخ</th>
+                                </tr>
+                            </thead>
+                            <tbody id="orders-table-body"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="bg-white p-6 rounded shadow">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="font-bold text-lg">📦 إدارة المنتجات</h3>
+                        <button onclick="openModal('addProductModal')" class="bg-green-600 text-white px-3 py-1 rounded text-sm">+ إضافة منتج</button>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-sm text-right">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="p-2">المنتج</th>
+                                    <th class="p-2">السعر</th>
+                                    <th class="p-2">الكمية</th>
+                                    <th class="p-2">الفئة</th>
+                                    <th class="p-2">إجراءات</th>
+                                </tr>
+                            </thead>
+                            <tbody id="products-table-body"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="bg-white p-6 rounded shadow mt-8">
+                <h3 class="font-bold text-lg mb-4">👥 إدارة العملاء</h3>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm text-right">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="p-2">الاسم</th>
+                                <th class="p-2">البريد</th>
+                                <th class="p-2">الهاتف</th>
+                                <th class="p-2">الطلبات</th>
+                                <th class="p-2">تاريخ التسجيل</th>
+                            </tr>
+                        </thead>
+                        <tbody id="clients-table-body"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div id="dashboard-settings" class="bg-white p-6 rounded shadow mt-8 hidden">
+                <h3 class="font-bold text-lg mb-4">⚙️ إعدادات الحساب</h3>
+                <form id="settings-form" class="grid md:grid-cols-2 gap-4">
+                    <input type="text" id="company-name" placeholder="اسم الشركة" class="border p-2 rounded">
+                    <input type="text" id="phone-number" placeholder="رقم الهاتف" class="border p-2 rounded">
+                    <input type="text" id="address" placeholder="العنوان" class="border p-2 rounded md:col-span-2">
+                    <textarea id="company-desc" placeholder="نبذة عن الشركة" class="border p-2 rounded md:col-span-2"></textarea>
+                    <button type="submit" class="bg-green-600 text-white px-4 py-2 rounded md:col-span-2 hover:bg-green-700">حفظ التغييرات</button>
+                </form>
+            </div>
         </div>
     </section>
 
@@ -258,9 +268,9 @@
             <div>
                 <h4 class="font-bold text-lg mb-4">روابط سريعة</h4>
                 <ul class="space-y-2 text-gray-400">
-                    <li><a href="#" class="hover:text-white">الرئيسية</a></li>
+                    <li><a href="#" onclick="showSection('home')" class="hover:text-white">الرئيسية</a></li>
                     <li><a href="#products" class="hover:text-white">المنتجات</a></li>
-                    <li><a href="#dashboard" class="hover:text-white">لوحة التحكم</a></li>
+                    <li><a href="#" onclick="showSection('dashboard')" class="hover:text-white">لوحة التحكم</a></li>
                 </ul>
             </div>
             <div>
@@ -284,12 +294,13 @@
         <div class="modal-content">
             <span class="close" onclick="closeModal('loginModal')">&times;</span>
             <h2 class="text-2xl font-bold mb-4 text-center">تسجيل الدخول</h2>
-            <form class="space-y-4">
-                <input type="email" placeholder="البريد الإلكتروني" class="w-full border p-2 rounded">
-                <input type="password" placeholder="كلمة المرور" class="w-full border p-2 rounded">
-                <button type="button" class="w-full bg-green-600 text-white py-2 rounded hover:bg-green-700">دخول</button>
+            <form id="login-form" class="space-y-4">
+                <input type="email" id="login-email" placeholder="البريد الإلكتروني" class="w-full border p-2 rounded" required>
+                <input type="password" id="login-password" placeholder="كلمة المرور" class="w-full border p-2 rounded" required>
+                <button type="submit" class="w-full bg-green-600 text-white py-2 rounded hover:bg-green-700">دخول</button>
                 <button type="button" onclick="closeModal('loginModal')" class="w-full text-gray-500 py-2">إلغاء</button>
             </form>
+            <p id="login-error" class="text-red-500 text-sm mt-2 hidden"></p>
         </div>
     </div>
 
@@ -298,18 +309,19 @@
         <div class="modal-content">
             <span class="close" onclick="closeModal('registerModal')">&times;</span>
             <h2 class="text-2xl font-bold mb-4 text-center">إنشاء حساب جديد</h2>
-            <form class="space-y-4">
-                <input type="text" placeholder="الاسم الكامل" class="w-full border p-2 rounded">
-                <input type="email" placeholder="البريد الإلكتروني" class="w-full border p-2 rounded">
-                <input type="tel" placeholder="رقم الهاتف" class="w-full border p-2 rounded">
-                <select class="w-full border p-2 rounded">
+            <form id="register-form" class="space-y-4">
+                <input type="text" id="register-name" placeholder="الاسم الكامل" class="w-full border p-2 rounded" required>
+                <input type="email" id="register-email" placeholder="البريد الإلكتروني" class="w-full border p-2 rounded" required>
+                <input type="tel" id="register-phone" placeholder="رقم الهاتف" class="w-full border p-2 rounded" required>
+                <select id="register-type" class="w-full border p-2 rounded">
                     <option value="client">عميل</option>
                     <option value="supplier">مورد</option>
                 </select>
-                <input type="password" placeholder="كلمة المرور" class="w-full border p-2 rounded">
-                <button type="button" class="w-full bg-green-600 text-white py-2 rounded hover:bg-green-700">إنشاء حساب</button>
+                <input type="password" id="register-password" placeholder="كلمة المرور" class="w-full border p-2 rounded" required>
+                <button type="submit" class="w-full bg-green-600 text-white py-2 rounded hover:bg-green-700">إنشاء حساب</button>
                 <button type="button" onclick="closeModal('registerModal')" class="w-full text-gray-500 py-2">إلغاء</button>
             </form>
+            <p id="register-error" class="text-red-500 text-sm mt-2 hidden"></p>
         </div>
     </div>
 
@@ -318,21 +330,22 @@
         <div class="modal-content">
             <span class="close" onclick="closeModal('addProductModal')">&times;</span>
             <h2 class="text-2xl font-bold mb-4 text-center">إضافة منتج جديد</h2>
-            <form class="space-y-4">
-                <input type="text" placeholder="اسم المنتج" class="w-full border p-2 rounded">
-                <input type="number" placeholder="السعر (د.ع)" class="w-full border p-2 rounded">
-                <input type="number" placeholder="الكمية المتاحة" class="w-full border p-2 rounded">
-                <select class="w-full border p-2 rounded">
-                    <option>الحبوب والأرز</option>
-                    <option>البهارات والتوابل</option>
-                    <option>المعلبات</option>
-                    <option>المكسرات</option>
-                    <option>الزيوت</option>
+            <form id="add-product-form" class="space-y-4">
+                <input type="text" id="product-name" placeholder="اسم المنتج" class="w-full border p-2 rounded" required>
+                <input type="number" id="product-price" placeholder="السعر (د.ع)" class="w-full border p-2 rounded" required>
+                <input type="number" id="product-quantity" placeholder="الكمية المتاحة" class="w-full border p-2 rounded" required>
+                <select id="product-category" class="w-full border p-2 rounded">
+                    <option value="grains">الحبوب والأرز</option>
+                    <option value="spices">البهارات والتوابل</option>
+                    <option value="canned">المعلبات</option>
+                    <option value="nuts">المكسرات</option>
+                    <option value="oils">الزيوت</option>
                 </select>
-                <textarea placeholder="الوصف" class="w-full border p-2 rounded"></textarea>
-                <button type="button" class="w-full bg-green-600 text-white py-2 rounded hover:bg-green-700">إضافة</button>
+                <textarea id="product-desc" placeholder="الوصف" class="w-full border p-2 rounded"></textarea>
+                <button type="submit" class="w-full bg-green-600 text-white py-2 rounded hover:bg-green-700">إضافة</button>
                 <button type="button" onclick="closeModal('addProductModal')" class="w-full text-gray-500 py-2">إلغاء</button>
             </form>
+            <p id="add-product-error" class="text-red-500 text-sm mt-2 hidden"></p>
         </div>
     </div>
 
@@ -341,60 +354,539 @@
         <div class="modal-content">
             <span class="close" onclick="closeModal('cartModal')">&times;</span>
             <h2 class="text-2xl font-bold mb-4 text-center">🛒 سلة التسوق</h2>
-            <div class="text-center py-8 text-gray-500">السلة فارغة</div>
+            <div id="cart-items" class="text-center py-8 text-gray-500">السلة فارغة</div>
             <div class="flex justify-between items-center mt-4 border-t pt-4">
                 <span class="font-bold">المجموع:</span>
-                <span class="font-bold text-green-600">0 د.ع</span>
+                <span id="cart-total" class="font-bold text-green-600">0 د.ع</span>
             </div>
             <div class="flex gap-2 mt-4">
                 <button onclick="closeModal('cartModal')" class="flex-1 border py-2 rounded">إغلاق</button>
-                <button class="flex-1 bg-green-600 text-white py-2 rounded">إتمام الشراء</button>
+                <button onclick="checkout()" class="flex-1 bg-green-600 text-white py-2 rounded hover:bg-green-700">إتمام الشراء</button>
             </div>
         </div>
     </div>
 
-    <!-- Supabase Initialization & Logic -->
+    <!-- JavaScript -->
     <script>
-        // --- Supabase Configuration ---
+        // ==================== SUPABASE CONFIGURATION ====================
         const { createClient } = supabase;
         
-        // IMPORTANT: These keys are public (anon key), but ensure Row Level Security (RLS) is enabled in your Supabase dashboard.
         const SUPABASE_URL = 'https://frolmfzkljlvqstvbrmt.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZyb2xtZnprbGpsdnFzdHZicm10Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzEyMzE3NTUsImV4cCI6MjA4NjgwNzc1NX0.z1NMSzEvq0rCbiEXL1VLYhnf-4mSfoWtYaaov-1EGv4';
         
         const _supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        
+        console.log('✅ Supabase Client Initialized');
 
-        console.log('Supabase Client Initialized');
+        // ==================== STATE MANAGEMENT ====================
+        let currentUser = null;
+        let cart = [];
+        let allProducts = [];
 
-        // --- Modal Logic ---
+        // ==================== UTILITY FUNCTIONS ====================
+        function showSection(section) {
+            document.getElementById('home-section').classList.add('hidden-section');
+            document.getElementById('home-section').classList.remove('active-section');
+            document.getElementById('dashboard-section').classList.add('hidden-section');
+            document.getElementById('dashboard-section').classList.remove('active-section');
+            
+            if (section === 'home') {
+                document.getElementById('home-section').classList.remove('hidden-section');
+                document.getElementById('home-section').classList.add('active-section');
+            } else if (section === 'dashboard') {
+                if (!currentUser) {
+                    openModal('loginModal');
+                    return;
+                }
+                document.getElementById('dashboard-section').classList.remove('hidden-section');
+                document.getElementById('dashboard-section').classList.add('active-section');
+                loadDashboardData();
+            }
+            window.scrollTo(0, 0);
+        }
+
         function openModal(modalId) {
             document.getElementById(modalId).style.display = "block";
         }
 
         function closeModal(modalId) {
             document.getElementById(modalId).style.display = "none";
+            // Clear error messages
+            const errorEl = document.getElementById(modalId.replace('Modal', '-error'));
+            if (errorEl) errorEl.classList.add('hidden');
         }
 
-        // Close modal if clicking outside
-        window.onclick = function(event) {
-            if (event.target.classList.contains('modal')) {
-                event.target.style.display = "none";
+        function showError(modalId, message) {
+            const errorEl = document.getElementById(modalId.replace('Modal', '-error'));
+            if (errorEl) {
+                errorEl.textContent = message;
+                errorEl.classList.remove('hidden');
             }
         }
 
-        // --- Example Data Fetching (Placeholder) ---
-        // You can use _supabase.from('table_name').select('*') to fetch data
-        async function checkConnection() {
+        function showDashboardTab(tab) {
+            // Update tab styles
+            document.querySelectorAll('.dashboard-tab').forEach(btn => {
+                btn.classList.remove('bg-green-600', 'text-white');
+                btn.classList.add('bg-white', 'text-gray-700', 'border');
+            });
+            event.target.classList.remove('bg-white', 'text-gray-700', 'border');
+            event.target.classList.add('bg-green-600', 'text-white');
+            
+            // Show/hide settings
+            if (tab === 'settings') {
+                document.getElementById('dashboard-settings').classList.remove('hidden');
+            } else {
+                document.getElementById('dashboard-settings').classList.add('hidden');
+            }
+        }
+
+        function formatCurrency(amount) {
+            return new Intl.NumberFormat('ar-IQ').format(amount) + ' د.ع';
+        }
+
+        function formatDate(dateString) {
+            if (!dateString) return '-';
+            return new Date(dateString).toLocaleDateString('ar-IQ');
+        }
+
+        // ==================== AUTH FUNCTIONS ====================
+        async function checkAuth() {
+            const { data: { session } } = await _supabase.auth.getSession();
+            if (session) {
+                currentUser = session.user;
+                updateUserUI();
+            }
+        }
+
+        function updateUserUI() {
+            if (currentUser) {
+                document.getElementById('user-info').classList.remove('hidden');
+                document.getElementById('user-name').textContent = currentUser.email.split('@')[0];
+            } else {
+                document.getElementById('user-info').classList.add('hidden');
+            }
+        }
+
+        async function logout() {
+            await _supabase.auth.signOut();
+            currentUser = null;
+            updateUserUI();
+            showSection('home');
+            alert('تم تسجيل الخروج بنجاح');
+        }
+
+        // ==================== LOGIN/REGISTER ====================
+        document.getElementById('login-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('login-email').value;
+            const password = document.getElementById('login-password').value;
+            
+            const { data, error } = await _supabase.auth.signInWithPassword({
+                email,
+                password
+            });
+            
+            if (error) {
+                showError('loginModal', error.message);
+            } else {
+                currentUser = data.user;
+                updateUserUI();
+                closeModal('loginModal');
+                alert('تم تسجيل الدخول بنجاح!');
+                showSection('dashboard');
+            }
+        });
+
+        document.getElementById('register-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const name = document.getElementById('register-name').value;
+            const email = document.getElementById('register-email').value;
+            const phone = document.getElementById('register-phone').value;
+            const type = document.getElementById('register-type').value;
+            const password = document.getElementById('register-password').value;
+            
+            const { data, error } = await _supabase.auth.signUp({
+                email,
+                password,
+                options: {
+                    data: {
+                        full_name: name,
+                        phone: phone,
+                        user_type: type
+                    }
+                }
+            });
+            
+            if (error) {
+                showError('registerModal', error.message);
+            } else {
+                // Create user profile
+                if (data.user) {
+                    await _supabase.from('profiles').insert([{
+                        id: data.user.id,
+                        full_name: name,
+                        email: email,
+                        phone: phone,
+                        user_type: type
+                    }]);
+                }
+                closeModal('registerModal');
+                alert('تم إنشاء الحساب بنجاح! يرجى التحقق من بريدك الإلكتروني.');
+                openModal('loginModal');
+            }
+        });
+
+        // ==================== PRODUCTS ====================
+        async function loadProducts(category = 'all') {
+            const loadingEl = document.getElementById('products-loading');
+            const gridEl = document.getElementById('products-grid');
+            const errorEl = document.getElementById('products-error');
+            
+            loadingEl.classList.remove('hidden');
+            gridEl.innerHTML = '';
+            errorEl.classList.add('hidden');
+            
             try {
-                // Example: Check if connection works (requires a table named 'test' or similar to be valid)
-                // const { data, error } = await _supabase.from('products').select('*');
-                console.log('Supabase connection ready.');
+                let query = _supabase.from('products').select('*');
+                
+                if (category !== 'all') {
+                    query = query.eq('category', category);
+                }
+                
+                const { data, error } = await query;
+                
+                if (error) throw error;
+                
+                allProducts = data || [];
+                displayProducts(allProducts);
+                updateStats();
+                
             } catch (err) {
-                console.error('Connection error:', err);
+                console.error('Error loading products:', err);
+                errorEl.textContent = 'حدث خطأ في تحميل المنتجات: ' + err.message;
+                errorEl.classList.remove('hidden');
+                // Show demo products if database fails
+                displayProducts(getDemoProducts());
+            } finally {
+                loadingEl.classList.add('hidden');
             }
         }
 
-        checkConnection();
+        function getDemoProducts() {
+            return [
+                { id: 1, name: 'أرز بسمتي', price: 45000, quantity: 100, category: 'grains', description: 'أرز بسمتي هندي فاخر' },
+                { id: 2, name: 'زعفران', price: 150000, quantity: 50, category: 'spices', description: 'زعفران أصلي' },
+                { id: 3, name: 'طماطم معلبة', price: 25000, quantity: 200, category: 'canned', description: 'طماطم معلبة 400غ' },
+                { id: 4, name: 'لوز', price: 35000, quantity: 80, category: 'nuts', description: 'لوز Californian' },
+                { id: 5, name: 'زيت زيتون', price: 55000, quantity: 120, category: 'oils', description: 'زيت زيتون بكر' },
+                { id: 6, name: 'عدس', price: 30000, quantity: 150, category: 'grains', description: 'عدس أحمر' },
+                { id: 7, name: 'كمون', price: 20000, quantity: 90, category: 'spices', description: 'كمون مطحون' },
+                { id: 8, name: 'فول معلب', price: 18000, quantity: 180, category: 'canned', description: 'فول مدمس' }
+            ];
+        }
+
+        function displayProducts(products) {
+            const gridEl = document.getElementById('products-grid');
+            
+            if (!products || products.length === 0) {
+                gridEl.innerHTML = '<div class="text-center text-gray-500 col-span-4">لا توجد منتجات</div>';
+                return;
+            }
+            
+            gridEl.innerHTML = products.map(product => `
+                <div class="bg-white p-4 rounded-lg shadow hover:shadow-lg transition">
+                    <div class="h-40 bg-gray-100 rounded mb-4 flex items-center justify-center text-4xl">📦</div>
+                    <h3 class="font-bold text-lg mb-2">${product.name}</h3>
+                    <p class="text-gray-600 text-sm mb-2">${product.description || ''}</p>
+                    <div class="flex justify-between items-center">
+                        <span class="text-green-600 font-bold">${formatCurrency(product.price)}</span>
+                        <span class="text-gray-500 text-sm">متوفر: ${product.quantity}</span>
+                    </div>
+                    <button onclick="addToCart(${product.id})" class="w-full mt-3 bg-green-600 text-white py-2 rounded hover:bg-green-700">أضف للسلة</button>
+                </div>
+            `).join('');
+        }
+
+        function filterProducts(category) {
+            loadProducts(category);
+        }
+
+        // ==================== CART ====================
+        function addToCart(productId) {
+            const product = allProducts.find(p => p.id === productId);
+            if (!product) return;
+            
+            const existingItem = cart.find(item => item.id === productId);
+            if (existingItem) {
+                existingItem.quantity++;
+            } else {
+                cart.push({ ...product, quantity: 1 });
+            }
+            
+            updateCartUI();
+            alert('تمت الإضافة للسلة!');
+        }
+
+        function updateCartUI() {
+            const countEl = document.getElementById('cart-count');
+            const itemsEl = document.getElementById('cart-items');
+            const totalEl = document.getElementById('cart-total');
+            
+            const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
+            const totalPrice = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+            
+            countEl.textContent = totalItems;
+            totalEl.textContent = formatCurrency(totalPrice);
+            
+            if (cart.length === 0) {
+                itemsEl.innerHTML = 'السلة فارغة';
+            } else {
+                itemsEl.innerHTML = cart.map(item => `
+                    <div class="flex justify-between items-center py-2 border-b">
+                        <div>
+                            <span class="font-bold">${item.name}</span>
+                            <span class="text-gray-500 text-sm">x${item.quantity}</span>
+                        </div>
+                        <span class="text-green-600">${formatCurrency(item.price * item.quantity)}</span>
+                    </div>
+                `).join('');
+            }
+        }
+
+        async function checkout() {
+            if (cart.length === 0) {
+                alert('السلة فارغة!');
+                return;
+            }
+            
+            if (!currentUser) {
+                alert('يرجى تسجيل الدخول أولاً');
+                openModal('loginModal');
+                return;
+            }
+            
+            const total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+            
+            try {
+                const { error } = await _supabase.from('orders').insert([{
+                    user_id: currentUser.id,
+                    total_amount: total,
+                    status: 'pending',
+                    items: cart
+                }]);
+                
+                if (error) throw error;
+                
+                cart = [];
+                updateCartUI();
+                closeModal('cartModal');
+                alert('تم إنشاء الطلب بنجاح!');
+                loadDashboardData();
+                
+            } catch (err) {
+                console.error('Checkout error:', err);
+                alert('حدث خطأ: ' + err.message);
+            }
+        }
+
+        // ==================== DASHBOARD ====================
+        async function loadDashboardData() {
+            if (!currentUser) return;
+            
+            try {
+                // Load orders
+                const { data: orders } = await _supabase.from('orders')
+                    .select('*')
+                    .eq('user_id', currentUser.id)
+                    .order('created_at', { ascending: false })
+                    .limit(10);
+                
+                displayOrders(orders || []);
+                
+                // Load products for table
+                const { data: products } = await _supabase.from('products').select('*').limit(10);
+                displayProductsTable(products || getDemoProducts());
+                
+                // Load clients
+                const { data: profiles } = await _supabase.from('profiles').select('*').limit(10);
+                displayClients(profiles || []);
+                
+                // Update stats
+                document.getElementById('dash-total-orders').textContent = orders?.length || 0;
+                document.getElementById('dash-revenue').textContent = formatCurrency(
+                    orders?.reduce((sum, o) => sum + (o.total_amount || 0), 0) || 0
+                );
+                document.getElementById('dash-products').textContent = allProducts.length;
+                document.getElementById('dash-clients').textContent = profiles?.length || 0;
+                
+            } catch (err) {
+                console.error('Dashboard load error:', err);
+            }
+        }
+
+        function displayOrders(orders) {
+            const tbody = document.getElementById('orders-table-body');
+            
+            if (!orders || orders.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" class="p-4 text-center text-gray-500">لا توجد طلبات</td></tr>';
+                return;
+            }
+            
+            tbody.innerHTML = orders.map(order => `
+                <tr class="border-b">
+                    <td class="p-2">#${order.id?.toString().slice(0, 8) || '-'}</td>
+                    <td class="p-2">${order.user_id?.toString().slice(0, 8) || '-'}</td>
+                    <td class="p-2">${formatCurrency(order.total_amount || 0)}</td>
+                    <td class="p-2">
+                        <span class="px-2 py-1 rounded text-xs ${
+                            order.status === 'completed' ? 'bg-green-100 text-green-800' :
+                            order.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                            'bg-red-100 text-red-800'
+                        }">${order.status || 'pending'}</span>
+                    </td>
+                    <td class="p-2">${formatDate(order.created_at)}</td>
+                </tr>
+            `).join('');
+        }
+
+        function displayProductsTable(products) {
+            const tbody = document.getElementById('products-table-body');
+            
+            if (!products || products.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" class="p-4 text-center text-gray-500">لا توجد منتجات</td></tr>';
+                return;
+            }
+            
+            tbody.innerHTML = products.map(product => `
+                <tr class="border-b">
+                    <td class="p-2">${product.name}</td>
+                    <td class="p-2">${formatCurrency(product.price)}</td>
+                    <td class="p-2">${product.quantity}</td>
+                    <td class="p-2">${product.category}</td>
+                    <td class="p-2">
+                        <button onclick="editProduct(${product.id})" class="text-blue-600 hover:underline">تعديل</button>
+                        <button onclick="deleteProduct(${product.id})" class="text-red-600 hover:underline mr-2">حذف</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function displayClients(clients) {
+            const tbody = document.getElementById('clients-table-body');
+            
+            if (!clients || clients.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" class="p-4 text-center text-gray-500">لا توجد عملاء</td></tr>';
+                return;
+            }
+            
+            tbody.innerHTML = clients.map(client => `
+                <tr class="border-b">
+                    <td class="p-2">${client.full_name || '-'}</td>
+                    <td class="p-2">${client.email || '-'}</td>
+                    <td class="p-2">${client.phone || '-'}</td>
+                    <td class="p-2">0</td>
+                    <td class="p-2">${formatDate(client.created_at)}</td>
+                </tr>
+            `).join('');
+        }
+
+        async function updateStats() {
+            document.getElementById('stat-products').textContent = allProducts.length;
+        }
+
+        // ==================== ADD PRODUCT ====================
+        document.getElementById('add-product-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            if (!currentUser) {
+                showError('addProductModal', 'يرجى تسجيل الدخول أولاً');
+                return;
+            }
+            
+            const newProduct = {
+                name: document.getElementById('product-name').value,
+                price: parseInt(document.getElementById('product-price').value),
+                quantity: parseInt(document.getElementById('product-quantity').value),
+                category: document.getElementById('product-category').value,
+                description: document.getElementById('product-desc').value,
+                user_id: currentUser.id
+            };
+            
+            try {
+                const { error } = await _supabase.from('products').insert([newProduct]);
+                
+                if (error) throw error;
+                
+                closeModal('addProductModal');
+                alert('تم إضافة المنتج بنجاح!');
+                loadProducts();
+                loadDashboardData();
+                
+            } catch (err) {
+                showError('addProductModal', err.message);
+            }
+        });
+
+        async function editProduct(id) {
+            alert('وظيفة التعديل - يمكن تطويرها');
+        }
+
+        async function deleteProduct(id) {
+            if (!confirm('هل أنت متأكد من الحذف؟')) return;
+            
+            try {
+                const { error } = await _supabase.from('products').delete().eq('id', id);
+                if (error) throw error;
+                
+                alert('تم الحذف بنجاح!');
+                loadProducts();
+                loadDashboardData();
+                
+            } catch (err) {
+                alert('حدث خطأ: ' + err.message);
+            }
+        }
+
+        // ==================== SETTINGS ====================
+        document.getElementById('settings-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            if (!currentUser) return;
+            
+            const updates = {
+                company_name: document.getElementById('company-name').value,
+                phone: document.getElementById('phone-number').value,
+                address: document.getElementById('address').value,
+                description: document.getElementById('company-desc').value
+            };
+            
+            try {
+                const { error } = await _supabase.from('profiles')
+                    .update(updates)
+                    .eq('id', currentUser.id);
+                
+                if (error) throw error;
+                
+                alert('تم حفظ الإعدادات بنجاح!');
+                
+            } catch (err) {
+                alert('حدث خطأ: ' + err.message);
+            }
+        });
+
+        // ==================== INITIALIZATION ====================
+        document.addEventListener('DOMContentLoaded', async () => {
+            await checkAuth();
+            loadProducts();
+            
+            // Close modals on outside click
+            window.onclick = function(event) {
+                if (event.target.classList.contains('modal')) {
+                    event.target.style.display = 'none';
+                }
+            };
+        });
     </script>
 </body>
 </html>
