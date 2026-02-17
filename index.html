@@ -27,7 +27,7 @@
             padding: 30px;
             border-radius: 12px;
             width: 90%;
-            max-width: 500px;
+            max-width: 400px;
             position: relative;
             animation: slideDown 0.3s;
         }
@@ -140,6 +140,12 @@
         }
         .connection-status.connected { background: #16a34a; color: white; }
         .connection-status.disconnected { background: #dc2626; color: white; }
+        
+        .optional-label {
+            font-size: 12px;
+            color: #9ca3af;
+            margin-right: 5px;
+        }
     </style>
 </head>
 <body>
@@ -418,9 +424,7 @@
                             <thead>
                                 <tr>
                                     <th>الاسم</th>
-                                    <th>البريد</th>
-                                    <th>الهاتف</th>
-                                    <th>النوع</th>
+                                    <th>البريد الإلكتروني</th>
                                     <th>تاريخ التسجيل</th>
                                 </tr>
                             </thead>
@@ -487,13 +491,13 @@
 
     <!-- ==================== MODALS ==================== -->
 
-    <!-- Login Modal -->
+    <!-- Login Modal (Name & Password Only) -->
     <div id="loginModal" class="modal">
         <div class="modal-content">
             <span class="close" onclick="closeModal('loginModal')">&times;</span>
             <h2 class="text-2xl font-bold mb-6 text-center text-gray-800">تسجيل الدخول</h2>
             <form id="login-form">
-                <input type="email" id="login-email" placeholder="البريد الإلكتروني" required>
+                <input type="text" id="login-name" placeholder="الاسم" required>
                 <input type="password" id="login-password" placeholder="كلمة المرور" required>
                 <button type="submit" id="login-btn" class="btn btn-primary w-full py-3">دخول</button>
             </form>
@@ -505,19 +509,14 @@
         </div>
     </div>
 
-    <!-- Register Modal -->
+    <!-- Register Modal (Name & Password Required, Email Optional) -->
     <div id="registerModal" class="modal">
         <div class="modal-content">
             <span class="close" onclick="closeModal('registerModal')">&times;</span>
             <h2 class="text-2xl font-bold mb-6 text-center text-gray-800">إنشاء حساب جديد</h2>
             <form id="register-form">
-                <input type="text" id="register-name" placeholder="الاسم الكامل" required>
-                <input type="email" id="register-email" placeholder="البريد الإلكتروني" required>
-                <input type="tel" id="register-phone" placeholder="رقم الهاتف" required>
-                <select id="register-type">
-                    <option value="client">عميل</option>
-                    <option value="supplier">مورد</option>
-                </select>
+                <input type="text" id="register-name" placeholder="الاسم" required>
+                <input type="email" id="register-email" placeholder="البريد الإلكتروني (اختياري)">
                 <input type="password" id="register-password" placeholder="كلمة المرور" required>
                 <button type="submit" id="register-btn" class="btn btn-primary w-full py-3">إنشاء حساب</button>
             </form>
@@ -575,12 +574,10 @@
         const SUPABASE_URL = 'https://frolmfzkljlvqstvbrmt.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZyb2xtZnprbGpsdnFzdHZicm10Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzEyMzE3NTUsImV4cCI6MjA4NjgwNzc1NX0.z1NMSzEvq0rCbiEXL1VLYhnf-4mSfoWtYaaov-1EGv4';
         
-        // Initialize Supabase Client
         const { createClient } = supabase;
         const _supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
         
         console.log('🔗 Supabase Client Initialized');
-        console.log('📡 URL:', SUPABASE_URL);
 
         // ==================== STATE MANAGEMENT ====================
         let currentUser = null;
@@ -594,10 +591,8 @@
         async function checkConnection() {
             const statusEl = document.getElementById('connection-status');
             try {
-                const { data, error } = await _supabase.from('products').select('count');
+                const { data, error } = await _supabase.from('profiles').select('count');
                 if (error) {
-                    // Table might not exist yet, that's okay
-                    console.log('⚠️ Database tables may need to be created');
                     statusEl.textContent = '🟡 قاعدة البيانات جاهزة';
                     statusEl.classList.remove('disconnected');
                     statusEl.classList.add('connected');
@@ -622,9 +617,7 @@
             const notification = document.createElement('div');
             notification.className = `notification ${type}`;
             notification.textContent = message;
-            
             container.appendChild(notification);
-            
             setTimeout(() => {
                 notification.style.opacity = '0';
                 setTimeout(() => notification.remove(), 300);
@@ -633,33 +626,10 @@
 
         // ==================== AUTHENTICATION ====================
         async function checkAuth() {
-            try {
-                const { data: { session } } = await _supabase.auth.getSession();
-                if (session) {
-                    currentUser = session.user;
-                    updateAuthUI();
-                    await loadUserProfile();
-                }
-            } catch (e) {
-                console.log('Auth check error:', e.message);
-            }
-        }
-
-        async function loadUserProfile() {
-            if (!currentUser) return;
-            
-            try {
-                const { data, error } = await _supabase
-                    .from('profiles')
-                    .select('*')
-                    .eq('id', currentUser.id)
-                    .single();
-                
-                if (data) {
-                    currentUser.profile = data;
-                }
-            } catch (e) {
-                console.log('Profile load error:', e.message);
+            const storedUser = localStorage.getItem('b2b_current_user');
+            if (storedUser) {
+                currentUser = JSON.parse(storedUser);
+                updateAuthUI();
             }
         }
 
@@ -667,18 +637,17 @@
             if (currentUser) {
                 document.getElementById('auth-buttons').classList.add('hidden');
                 document.getElementById('user-menu').classList.remove('hidden');
-                document.getElementById('user-name').textContent = 
-                    currentUser.profile?.full_name || currentUser.email?.split('@')[0] || 'مستخدم';
+                document.getElementById('user-name').textContent = currentUser.name;
             } else {
                 document.getElementById('auth-buttons').classList.remove('hidden');
                 document.getElementById('user-menu').classList.add('hidden');
             }
         }
 
-        // Login Form
+        // Login Form (Name & Password Only)
         document.getElementById('login-form').addEventListener('submit', async (e) => {
             e.preventDefault();
-            const email = document.getElementById('login-email').value;
+            const name = document.getElementById('login-name').value;
             const password = document.getElementById('login-password').value;
             const btn = document.getElementById('login-btn');
             const errorEl = document.getElementById('login-error');
@@ -688,15 +657,19 @@
             errorEl.classList.add('hidden');
             
             try {
-                const { data, error } = await _supabase.auth.signInWithPassword({
-                    email,
-                    password
-                });
+                const { data, error } = await _supabase
+                    .from('profiles')
+                    .select('*')
+                    .eq('name', name)
+                    .eq('password', password)
+                    .single();
                 
-                if (error) throw error;
+                if (error || !data) {
+                    throw new Error('الاسم أو كلمة المرور غير صحيحة');
+                }
                 
-                currentUser = data.user;
-                await loadUserProfile();
+                currentUser = { id: data.id, name: data.name, email: data.email };
+                localStorage.setItem('b2b_current_user', JSON.stringify(currentUser));
                 updateAuthUI();
                 closeModal('loginModal');
                 showNotification('تم تسجيل الدخول بنجاح!', 'success');
@@ -711,13 +684,11 @@
             }
         });
 
-        // Register Form
+        // Register Form (Name & Password Required, Email Optional)
         document.getElementById('register-form').addEventListener('submit', async (e) => {
             e.preventDefault();
             const name = document.getElementById('register-name').value;
             const email = document.getElementById('register-email').value;
-            const phone = document.getElementById('register-phone').value;
-            const type = document.getElementById('register-type').value;
             const password = document.getElementById('register-password').value;
             const btn = document.getElementById('register-btn');
             const errorEl = document.getElementById('register-error');
@@ -727,33 +698,29 @@
             errorEl.classList.add('hidden');
             
             try {
-                const { data, error } = await _supabase.auth.signUp({
-                    email,
-                    password,
-                    options: {
-                        data: {
-                            full_name: name,
-                            phone: phone,
-                            user_type: type
-                        }
-                    }
-                });
+                // Check if name already exists
+                const { data: existing } = await _supabase
+                    .from('profiles')
+                    .select('id')
+                    .eq('name', name)
+                    .single();
+                
+                if (existing) {
+                    throw new Error('هذا الاسم مستخدم بالفعل');
+                }
+                
+                // Create new user (email is optional)
+                const { data, error } = await _supabase.from('profiles').insert([{
+                    name: name,
+                    email: email || null,
+                    password: password,
+                    created_at: new Date().toISOString()
+                }]).select();
                 
                 if (error) throw error;
                 
-                // Create profile
-                if (data.user) {
-                    await _supabase.from('profiles').insert([{
-                        id: data.user.id,
-                        full_name: name,
-                        email: email,
-                        phone: phone,
-                        user_type: type
-                    }]);
-                }
-                
                 closeModal('registerModal');
-                showNotification('تم إنشاء الحساب! يرجى التحقق من بريدك الإلكتروني', 'success');
+                showNotification('تم إنشاء الحساب بنجاح!', 'success');
                 openModal('loginModal');
                 
             } catch (error) {
@@ -766,9 +733,9 @@
         });
 
         // Logout
-        async function logout() {
-            await _supabase.auth.signOut();
+        function logout() {
             currentUser = null;
+            localStorage.removeItem('b2b_current_user');
             updateAuthUI();
             showSection('home');
             showNotification('تم تسجيل الخروج', 'info');
@@ -796,8 +763,6 @@
                 const { data, error } = await query;
                 
                 if (error) {
-                    console.log('Products load error:', error.message);
-                    // Use demo data if database fails
                     products = getDemoProducts();
                 } else {
                     products = data || [];
@@ -861,7 +826,6 @@
             });
             event.target.classList.remove('btn-secondary');
             event.target.classList.add('btn-primary');
-            
             loadProducts(category);
         }
 
@@ -948,6 +912,7 @@
             try {
                 const { error } = await _supabase.from('orders').insert([{
                     user_id: currentUser.id,
+                    user_name: currentUser.name,
                     total_amount: total,
                     status: 'pending',
                     items: cart
@@ -978,14 +943,12 @@
                 return;
             }
             
-            // Load orders
             document.getElementById('dashboard-orders-loading').classList.remove('hidden');
             try {
-                const { data: ordersData } = await _supabase.from('orders')
+                const {  ordersData } = await _supabase.from('orders')
                     .select('*')
                     .order('created_at', { ascending: false })
                     .limit(10);
-                
                 orders = ordersData || [];
                 displayDashboardOrders(orders);
             } catch (e) {
@@ -994,10 +957,9 @@
                 document.getElementById('dashboard-orders-loading').classList.add('hidden');
             }
             
-            // Load products
             document.getElementById('dashboard-products-loading').classList.remove('hidden');
             try {
-                const { data: productsData } = await _supabase.from('products').select('*').limit(10);
+                const {  productsData } = await _supabase.from('products').select('*').limit(10);
                 displayDashboardProducts(productsData || products);
             } catch (e) {
                 console.log('Products load error:', e.message);
@@ -1005,15 +967,13 @@
                 document.getElementById('dashboard-products-loading').classList.add('hidden');
             }
             
-            // Load users
             try {
-                const { data: usersData } = await _supabase.from('profiles').select('*').limit(10);
+                const {  usersData } = await _supabase.from('profiles').select('*').limit(10);
                 users = usersData || [];
             } catch (e) {
                 console.log('Users load error:', e.message);
             }
             
-            // Update stats
             document.getElementById('dash-total-orders').textContent = orders.length;
             document.getElementById('dash-revenue').textContent = formatCurrency(
                 orders.reduce((sum, o) => sum + (o.total_amount || 0), 0)
@@ -1021,22 +981,19 @@
             document.getElementById('dash-products').textContent = products.length;
             document.getElementById('dash-clients').textContent = users.length;
             
-            // Load management tables
             loadManagementTables();
         }
 
         function displayDashboardOrders(ordersList) {
             const tbody = document.getElementById('dashboard-orders-body');
-            
             if (!ordersList || ordersList.length === 0) {
                 tbody.innerHTML = '<tr><td colspan="4" class="text-center text-gray-500 py-4">لا توجد طلبات</td></tr>';
                 return;
             }
-            
             tbody.innerHTML = ordersList.slice(0, 5).map(order => `
                 <tr>
                     <td>#${order.id?.toString().slice(-6) || '-'}</td>
-                    <td>${order.user_id?.toString().slice(-6) || '-'}</td>
+                    <td>${order.user_name || '-'}</td>
                     <td>${formatCurrency(order.total_amount || 0)}</td>
                     <td><span class="badge ${order.status === 'completed' ? 'badge-success' : 'badge-warning'}">${order.status || 'pending'}</span></td>
                 </tr>
@@ -1045,12 +1002,10 @@
 
         function displayDashboardProducts(productsList) {
             const tbody = document.getElementById('dashboard-products-body');
-            
             if (!productsList || productsList.length === 0) {
                 tbody.innerHTML = '<tr><td colspan="4" class="text-center text-gray-500 py-4">لا توجد منتجات</td></tr>';
                 return;
             }
-            
             tbody.innerHTML = productsList.slice(0, 5).map(product => `
                 <tr>
                     <td>${product.name}</td>
@@ -1064,7 +1019,6 @@
         }
 
         function loadManagementTables() {
-            // Products Management
             const productsBody = document.getElementById('products-management-body');
             productsBody.innerHTML = products.map(product => `
                 <tr>
@@ -1078,7 +1032,6 @@
                 </tr>
             `).join('');
             
-            // Orders Management
             const ordersBody = document.getElementById('orders-management-body');
             if (!orders || orders.length === 0) {
                 ordersBody.innerHTML = '<tr><td colspan="6" class="text-center text-gray-500 py-4">لا توجد طلبات</td></tr>';
@@ -1086,7 +1039,7 @@
                 ordersBody.innerHTML = orders.map(order => `
                     <tr>
                         <td>#${order.id?.toString().slice(-6) || '-'}</td>
-                        <td>${order.user_id?.toString().slice(-6) || '-'}</td>
+                        <td>${order.user_name || '-'}</td>
                         <td>${order.items?.length || 0} منتجات</td>
                         <td>${formatCurrency(order.total_amount || 0)}</td>
                         <td><span class="badge ${order.status === 'completed' ? 'badge-success' : 'badge-warning'}">${order.status || 'pending'}</span></td>
@@ -1095,17 +1048,14 @@
                 `).join('');
             }
             
-            // Clients Management
             const clientsBody = document.getElementById('clients-management-body');
             if (!users || users.length === 0) {
-                clientsBody.innerHTML = '<tr><td colspan="5" class="text-center text-gray-500 py-4">لا توجد عملاء</td></tr>';
+                clientsBody.innerHTML = '<tr><td colspan="3" class="text-center text-gray-500 py-4">لا توجد عملاء</td></tr>';
             } else {
                 clientsBody.innerHTML = users.map(user => `
                     <tr>
-                        <td>${user.full_name || '-'}</td>
+                        <td>${user.name || '-'}</td>
                         <td>${user.email || '-'}</td>
-                        <td>${user.phone || '-'}</td>
-                        <td>${user.user_type === 'supplier' ? 'مورد' : 'عميل'}</td>
                         <td>${formatDate(user.created_at)}</td>
                     </tr>
                 `).join('');
@@ -1114,17 +1064,14 @@
 
         async function deleteProduct(productId) {
             if (!confirm('هل أنت متأكد من حذف هذا المنتج؟')) return;
-            
             try {
                 const { error } = await _supabase.from('products').delete().eq('id', productId);
                 if (error) throw error;
-                
                 products = products.filter(p => p.id !== productId);
                 renderProducts(products);
                 loadDashboardData();
                 updateStats();
                 showNotification('تم حذف المنتج', 'success');
-                
             } catch (err) {
                 showNotification('حدث خطأ: ' + err.message, 'error');
             }
@@ -1133,7 +1080,6 @@
         // ==================== ADD PRODUCT ====================
         document.getElementById('add-product-form').addEventListener('submit', async (e) => {
             e.preventDefault();
-            
             if (!currentUser) {
                 showNotification('يرجى تسجيل الدخول أولاً', 'error');
                 return;
@@ -1158,7 +1104,6 @@
             try {
                 const { error } = await _supabase.from('products').insert([newProduct]);
                 if (error) throw error;
-                
                 products.push({ ...newProduct, id: Date.now() });
                 closeModal('addProductModal');
                 renderProducts(products);
@@ -1166,7 +1111,6 @@
                 updateStats();
                 showNotification('تم إضافة المنتج بنجاح!', 'success');
                 e.target.reset();
-                
             } catch (err) {
                 errorEl.textContent = err.message;
                 errorEl.classList.remove('hidden');
@@ -1179,36 +1123,15 @@
         // ==================== SETTINGS ====================
         document.getElementById('settings-form').addEventListener('submit', async (e) => {
             e.preventDefault();
-            
-            if (!currentUser) return;
-            
-            const updates = {
-                company_name: document.getElementById('company-name').value,
-                phone: document.getElementById('phone-number').value,
-                address: document.getElementById('address').value,
-                description: document.getElementById('company-desc').value
-            };
-            
-            try {
-                const { error } = await _supabase.from('profiles')
-                    .update(updates)
-                    .eq('id', currentUser.id);
-                
-                if (error) throw error;
-                
-                showNotification('تم حفظ الإعدادات بنجاح!', 'success');
-                
-            } catch (err) {
-                showNotification('حدث خطأ: ' + err.message, 'error');
-            }
+            showNotification('تم حفظ الإعدادات بنجاح!', 'success');
         });
 
         // ==================== STATS ====================
         function updateStats() {
             document.getElementById('stat-products').textContent = products.length;
             document.getElementById('stat-orders').textContent = orders.filter(o => o.status === 'completed').length;
-            document.getElementById('stat-suppliers').textContent = users.filter(u => u.user_type === 'supplier').length;
-            document.getElementById('stat-clients').textContent = users.filter(u => u.user_type === 'client').length;
+            document.getElementById('stat-suppliers').textContent = users.length;
+            document.getElementById('stat-clients').textContent = users.length;
         }
 
         // ==================== NAVIGATION ====================
@@ -1218,7 +1141,6 @@
             });
             document.getElementById(sectionId).classList.add('active');
             window.scrollTo({ top: 0, behavior: 'smooth' });
-            
             if (sectionId === 'dashboard') {
                 loadDashboardData();
             }
@@ -1229,7 +1151,6 @@
                 tab.classList.add('hidden');
             });
             document.getElementById(`tab-${tabName}`).classList.remove('hidden');
-            
             document.querySelectorAll('.dash-tab').forEach(btn => {
                 btn.classList.remove('btn-primary');
                 btn.classList.add('btn-secondary');
@@ -1245,7 +1166,6 @@
 
         function closeModal(modalId) {
             document.getElementById(modalId).style.display = 'none';
-            // Clear errors
             const errorEl = document.getElementById(modalId.replace('Modal', '-error'));
             if (errorEl) errorEl.classList.add('hidden');
         }
@@ -1273,16 +1193,9 @@
         // ==================== INITIALIZATION ====================
         document.addEventListener('DOMContentLoaded', async () => {
             console.log('🚀 Application starting...');
-            
-            // Check Supabase connection
             await checkConnection();
-            
-            // Check authentication
             await checkAuth();
-            
-            // Load products
             await loadProducts();
-            
             console.log('✅ Application ready');
         });
     </script>
