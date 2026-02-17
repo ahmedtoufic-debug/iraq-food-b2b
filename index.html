@@ -1232,6 +1232,45 @@
                             `).join('')}
                         </table>
                         <p class="total">المجموع الكلي: ${order.total.toLocaleString()} د.ع</p>
+                        <!DOCTYPE html>
+<html>
+<head>
+    <!-- Your existing design CSS and settings are here -->
+    <title>منصة B2B للمواد الغذائية - العراق</title>
+</head>
+<body>
+
+    <!-- YOUR EXISTING DESIGN IS HERE -->
+    <!-- Your images, text, forms, and layout are here -->
+    <h1>منصة B2B للمواد الغذائية - العراق</h1>
+    
+    <!-- ... rest of your design ... -->
+
+
+    <!-- ▼▼▼ PASTE THE CODE BELOW THIS LINE ▼▼▼ -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+      const { createClient } = supabase;
+      
+      // REPLACE THESE WITH YOUR ACTUAL KEYS FROM SUPABASE
+      const supabaseUrl = 'https://frolmfzkljlvqstvbrmt.supabase.co';
+      const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZyb2xtZnprbGpsdnFzdHZicm10Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzEyMzE3NTUsImV4cCI6MjA4NjgwNzc1NX0.z1NMSzEvq0rCbiEXL1VLYhnf-4mSfoWtYaaov-1EGv4';
+      
+      const _supabase = createClient(supabaseUrl, supabaseKey);
+
+      // Example: Load data when page opens
+      async function loadData() {
+        console.log("Connected to Supabase!");
+        // You can add your fetch logic here later
+      }
+
+      loadData();
+    </script>
+    <!-- ▲▲▲ END OF CODE TO PASTE ▲▲▲ -->
+
+
+</body>  <!-- <--- The code must be ABOVE this line -->
+</html>
                     </body>
                     </html>
                 `);
