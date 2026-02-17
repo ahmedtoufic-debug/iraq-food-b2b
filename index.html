@@ -22,9 +22,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         * {
             margin: 0;
@@ -161,10 +159,14 @@
             background: #b91c1c;
         }
 
+        .btn-sm {
+            padding: 0.5rem 0.75rem;
+            font-size: 0.85rem;
+        }
+
         /* Hero Section */
         .hero {
-            background: linear-gradient(rgba(30, 64, 175, 0.85), rgba(30, 58, 138, 0.9)), 
-                        url('https://image.qwenlm.ai/public_source/12bec8fc-6b9c-4ee0-89a6-73dc780b2c87/1e7292f3f-4b86-4068-b862-303254cdbce7.png') center/cover;
+            background: linear-gradient(rgba(30, 64, 175, 0.85), rgba(30, 58, 138, 0.9));
             color: white;
             padding: 5rem 2rem;
             text-align: center;
@@ -587,6 +589,7 @@
             color: var(--text-light);
             text-decoration: none;
             transition: color 0.3s;
+            cursor: pointer;
         }
 
         .footer-links a:hover {
@@ -707,68 +710,13 @@
             }
         }
 
-        /* Order Steps */
-        .order-steps {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 2rem;
+        .dashboard-tab {
+            animation: fadeIn 0.3s ease;
         }
 
-        .order-step {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            flex: 1;
-            position: relative;
-        }
-
-        .order-step:not(:last-child)::after {
-            content: '';
-            position: absolute;
-            top: 20px;
-            left: 50%;
-            width: 100%;
-            height: 2px;
-            background: var(--border);
-        }
-
-        .order-step.completed:not(:last-child)::after {
-            background: var(--secondary);
-        }
-
-        .step-number {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            background: var(--border);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: 700;
-            margin-bottom: 0.5rem;
-            position: relative;
-            z-index: 1;
-        }
-
-        .order-step.completed .step-number {
-            background: var(--secondary);
-            color: white;
-        }
-
-        .order-step.active .step-number {
-            background: var(--primary);
-            color: white;
-        }
-
-        .step-label {
-            font-size: 0.9rem;
-            color: var(--text-gray);
-        }
-
-        .order-step.completed .step-label,
-        .order-step.active .step-label {
-            color: var(--text-dark);
-            font-weight: 600;
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
         }
     </style>
 </head>
@@ -1219,33 +1167,21 @@
     </footer>
 
     <script>
-        // Firebase Configuration - Replace with your actual Firebase config
-        const firebaseConfig = {
-            apiKey: "YOUR_API_KEY",
-            authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-            projectId: "YOUR_PROJECT_ID",
-            storageBucket: "YOUR_PROJECT_ID.appspot.com",
-            messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-            appId: "YOUR_APP_ID"
-        };
-
-        // Initialize Firebase
-        let db, auth;
+        // ============================================
+        // 🔧 SUPABASE CONFIGURATION
+        // ============================================
+        // احصل على هذه القيم من: https://app.supabase.com
+        // Project Settings → API
+        const SUPABASE_URL = 'https://frolmfzkljlvqstvbrmt.supabase.co'; // مثال: https://xxxxx.supabase.co
+        const SUPABASE_ANON_KEY = 'sb_publishable_YkWdraD80wfm9XJGuAVbng_-4UB5H7z'; // المفتاح العام
+        
+        // Initialize Supabase
+        let supabase;
         let currentUser = null;
         let cart = [];
         let allProducts = [];
         let allOrders = [];
         let allUsers = [];
-
-        // Initialize Firebase (comment out if not using Firebase)
-        try {
-            firebase.initializeApp(firebaseConfig);
-            db = firebase.firestore();
-            auth = firebase.auth();
-            console.log('Firebase initialized');
-        } catch (e) {
-            console.log('Firebase not configured - using local storage');
-        }
 
         // Sample data for demo
         const sampleProducts = [
@@ -1261,10 +1197,22 @@
 
         // Initialize app
         document.addEventListener('DOMContentLoaded', function() {
+            initSupabase();
+        });
+
+        // Initialize Supabase
+        function initSupabase() {
+            if (SUPABASE_URL !== 'YOUR_SUPABASE_URL' && SUPABASE_ANON_KEY !== 'YOUR_SUPABASE_ANON_KEY') {
+                supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+                console.log('✅ Supabase connected');
+                checkAuth();
+            } else {
+                console.log('⚠️ Supabase not configured - using local storage');
+                showNotification('يرجى إعداد Supabase في الكود', 'error');
+            }
             loadProducts();
             loadStats();
-            checkAuth();
-        });
+        }
 
         // Show/Hide sections
         function showSection(sectionId) {
@@ -1301,23 +1249,26 @@
             }, 3000);
         }
 
-        // Load products
-        function loadProducts() {
-            if (db) {
-                db.collection('products').get().then(snapshot => {
-                    allProducts = [];
-                    snapshot.forEach(doc => {
-                        allProducts.push({ id: doc.id, ...doc.data() });
-                    });
-                    renderProducts();
-                }).catch(() => {
+        // Load products from Supabase
+        async function loadProducts() {
+            if (supabase) {
+                const { data, error } = await supabase
+                    .from('products')
+                    .select('*')
+                    .order('created_at', { ascending: false });
+                
+                if (error) {
+                    console.log('Error loading products:', error);
                     allProducts = sampleProducts;
-                    renderProducts();
-                });
+                } else if (data && data.length > 0) {
+                    allProducts = data;
+                } else {
+                    allProducts = sampleProducts;
+                }
             } else {
                 allProducts = sampleProducts;
-                renderProducts();
             }
+            renderProducts();
         }
 
         // Render products
@@ -1446,8 +1397,8 @@
             renderCart();
         }
 
-        // Checkout
-        function checkout() {
+        // Checkout - Save order to Supabase
+        async function checkout() {
             if (cart.length === 0) {
                 showNotification('السلة فارغة', 'error');
                 return;
@@ -1460,27 +1411,29 @@
             }
             
             const order = {
-                userId: currentUser.uid,
-                userName: currentUser.displayName || currentUser.email,
-                items: [...cart],
+                user_id: currentUser.id,
+                user_name: currentUser.user_metadata?.name || currentUser.email,
+                items: cart,
                 total: cart.reduce((sum, item) => sum + (item.price * item.quantity), 0),
                 status: 'pending',
-                date: new Date().toISOString()
+                created_at: new Date().toISOString()
             };
             
-            if (db) {
-                db.collection('orders').add(order).then(() => {
+            if (supabase) {
+                const { error } = await supabase.from('orders').insert([order]);
+                if (error) {
+                    showNotification('حدث خطأ: ' + error.message, 'error');
+                } else {
                     showNotification('تم إرسال الطلب بنجاح', 'success');
                     cart = [];
                     updateCartCount();
                     closeModal('cartModal');
                     loadOrders();
-                }).catch(err => {
-                    showNotification('حدث خطأ: ' + err.message, 'error');
-                });
+                }
             } else {
                 // Local storage fallback
                 let orders = JSON.parse(localStorage.getItem('orders') || '[]');
+                order.id = Date.now();
                 orders.push(order);
                 localStorage.setItem('orders', JSON.stringify(orders));
                 showNotification('تم إرسال الطلب بنجاح', 'success');
@@ -1491,11 +1444,16 @@
             }
         }
 
-        // Auth functions
-        function checkAuth() {
-            if (auth) {
-                auth.onAuthStateChanged(user => {
-                    currentUser = user;
+        // Auth functions - Supabase Auth
+        async function checkAuth() {
+            if (supabase) {
+                const { data: { session } } = await supabase.auth.getSession();
+                currentUser = session?.user || null;
+                updateAuthUI();
+                
+                // Listen for auth changes
+                supabase.auth.onAuthStateChange((event, session) => {
+                    currentUser = session?.user || null;
                     updateAuthUI();
                 });
             } else {
@@ -1516,8 +1474,9 @@
                 authButtons.style.display = 'none';
                 userInfo.style.display = 'flex';
                 dashboardLink.style.display = 'block';
-                document.getElementById('userName').textContent = currentUser.displayName || currentUser.email.split('@')[0];
-                document.getElementById('userAvatar').textContent = (currentUser.displayName || currentUser.email)[0].toUpperCase();
+                const name = currentUser.user_metadata?.name || currentUser.email.split('@')[0];
+                document.getElementById('userName').textContent = name;
+                document.getElementById('userAvatar').textContent = name[0].toUpperCase();
                 loadDashboard();
             } else {
                 authButtons.style.display = 'flex';
@@ -1526,21 +1485,26 @@
             }
         }
 
-        function login(event) {
+        async function login(event) {
             event.preventDefault();
             const email = document.getElementById('loginEmail').value;
             const password = document.getElementById('loginPassword').value;
             
-            if (auth) {
-                auth.signInWithEmailAndPassword(email, password).then(() => {
+            if (supabase) {
+                const { data, error } = await supabase.auth.signInWithPassword({
+                    email,
+                    password
+                });
+                
+                if (error) {
+                    showNotification('خطأ: ' + error.message, 'error');
+                } else {
                     closeModal('loginModal');
                     showNotification('تم تسجيل الدخول بنجاح', 'success');
-                }).catch(err => {
-                    showNotification('خطأ: ' + err.message, 'error');
-                });
+                }
             } else {
                 // Demo login
-                currentUser = { email, displayName: email.split('@')[0], uid: 'demo-user' };
+                currentUser = { email, user_metadata: { name: email.split('@')[0] }, id: 'demo-user' };
                 localStorage.setItem('currentUser', JSON.stringify(currentUser));
                 updateAuthUI();
                 closeModal('loginModal');
@@ -1548,7 +1512,7 @@
             }
         }
 
-        function register(event) {
+        async function register(event) {
             event.preventDefault();
             const name = document.getElementById('registerName').value;
             const email = document.getElementById('registerEmail').value;
@@ -1556,28 +1520,43 @@
             const type = document.getElementById('registerType').value;
             const password = document.getElementById('registerPassword').value;
             
-            if (auth) {
-                auth.createUserWithEmailAndPassword(email, password).then((cred) => {
-                    return cred.user.updateProfile({ displayName: name });
-                }).then(() => {
-                    // Save user data to Firestore
-                    return db.collection('users').doc(auth.currentUser.uid).set({
-                        name, email, phone, type, createdAt: new Date().toISOString()
-                    });
-                }).then(() => {
+            if (supabase) {
+                const { data, error } = await supabase.auth.signUp({
+                    email,
+                    password,
+                    options: {
+                        data: {
+                            name,
+                            phone,
+                            type
+                        }
+                    }
+                });
+                
+                if (error) {
+                    showNotification('خطأ: ' + error.message, 'error');
+                } else {
+                    // Save additional user data to users table
+                    if (data.user) {
+                        await supabase.from('users').insert([{
+                            id: data.user.id,
+                            name,
+                            email,
+                            phone,
+                            type,
+                            created_at: new Date().toISOString()
+                        }]);
+                    }
                     closeModal('registerModal');
                     showNotification('تم إنشاء الحساب بنجاح', 'success');
-                }).catch(err => {
-                    showNotification('خطأ: ' + err.message, 'error');
-                });
+                }
             } else {
                 // Demo register
-                currentUser = { email, displayName: name, phone, type, uid: 'demo-user-' + Date.now() };
+                currentUser = { email, user_metadata: { name, phone, type }, id: 'demo-user-' + Date.now() };
                 localStorage.setItem('currentUser', JSON.stringify(currentUser));
                 
-                // Save to local users
                 let users = JSON.parse(localStorage.getItem('users') || '[]');
-                users.push(currentUser);
+                users.push({ id: currentUser.id, name, email, phone, type, created_at: new Date().toISOString() });
                 localStorage.setItem('users', JSON.stringify(users));
                 
                 updateAuthUI();
@@ -1586,9 +1565,9 @@
             }
         }
 
-        function logout() {
-            if (auth) {
-                auth.signOut();
+        async function logout() {
+            if (supabase) {
+                await supabase.auth.signOut();
             }
             currentUser = null;
             localStorage.removeItem('currentUser');
@@ -1604,62 +1583,51 @@
             loadCustomers();
         }
 
-        function loadStats() {
-            if (db) {
-                Promise.all([
-                    db.collection('products').get(),
-                    db.collection('orders').get(),
-                    db.collection('users').get()
-                ]).then(([products, orders, users]) => {
-                    document.getElementById('statProducts').textContent = products.size;
-                    document.getElementById('statOrders').textContent = orders.size;
-                    
-                    const suppliers = users.docs.filter(d => d.data().type === 'supplier').length;
-                    const customers = users.docs.filter(d => d.data().type === 'customer').length;
-                    document.getElementById('statSuppliers').textContent = suppliers;
-                    document.getElementById('statCustomers').textContent = customers;
-                    
-                    // Dashboard stats
-                    document.getElementById('dashOrders').textContent = orders.size;
-                    document.getElementById('dashProducts').textContent = products.size;
-                    document.getElementById('dashCustomers').textContent = customers;
-                    
-                    const totalRevenue = orders.docs.reduce((sum, d) => sum + (d.data().total || 0), 0);
-                    document.getElementById('dashRevenue').textContent = totalRevenue.toLocaleString();
-                });
+        async function loadStats() {
+            if (supabase) {
+                const [products, orders, users] = await Promise.all([
+                    supabase.from('products').select('*', { count: 'exact', head: true }),
+                    supabase.from('orders').select('*', { count: 'exact', head: true }),
+                    supabase.from('users').select('type', { count: 'exact', head: true })
+                ]);
+                
+                document.getElementById('statProducts').textContent = products.count || 0;
+                document.getElementById('statOrders').textContent = orders.count || 0;
+                
+                // Dashboard stats
+                document.getElementById('dashOrders').textContent = orders.count || 0;
+                document.getElementById('dashProducts').textContent = products.count || 0;
+                
+                const ordersData = await supabase.from('orders').select('total');
+                const totalRevenue = ordersData.data?.reduce((sum, o) => sum + (o.total || 0), 0) || 0;
+                document.getElementById('dashRevenue').textContent = totalRevenue.toLocaleString();
             } else {
-                // Local storage stats
                 const products = JSON.parse(localStorage.getItem('products') || '[]');
                 const orders = JSON.parse(localStorage.getItem('orders') || '[]');
-                const users = JSON.parse(localStorage.getItem('users') || '[]');
                 
                 document.getElementById('statProducts').textContent = products.length || sampleProducts.length;
                 document.getElementById('statOrders').textContent = orders.length;
-                document.getElementById('statSuppliers').textContent = users.filter(u => u.type === 'supplier').length;
-                document.getElementById('statCustomers').textContent = users.filter(u => u.type === 'customer').length;
-                
                 document.getElementById('dashOrders').textContent = orders.length;
                 document.getElementById('dashProducts').textContent = products.length || sampleProducts.length;
-                document.getElementById('dashCustomers').textContent = users.filter(u => u.type === 'customer').length;
                 
                 const totalRevenue = orders.reduce((sum, o) => sum + (o.total || 0), 0);
                 document.getElementById('dashRevenue').textContent = totalRevenue.toLocaleString();
             }
         }
 
-        function loadOrders() {
-            if (db) {
-                db.collection('orders').orderBy('date', 'desc').limit(10).get().then(snapshot => {
-                    allOrders = [];
-                    snapshot.forEach(doc => {
-                        allOrders.push({ id: doc.id, ...doc.data() });
-                    });
-                    renderOrders();
-                });
+        async function loadOrders() {
+            if (supabase) {
+                const { data, error } = await supabase
+                    .from('orders')
+                    .select('*')
+                    .order('created_at', { ascending: false })
+                    .limit(10);
+                
+                allOrders = data || [];
             } else {
                 allOrders = JSON.parse(localStorage.getItem('orders') || '[]');
-                renderOrders();
             }
+            renderOrders();
         }
 
         function renderOrders() {
@@ -1668,8 +1636,8 @@
             
             const html = allOrders.map(o => `
                 <tr>
-                    <td>#${o.id?.slice(0, 8) || Math.floor(Math.random() * 10000)}</td>
-                    <td>${o.userName || 'عميل'}</td>
+                    <td>#${o.id?.toString().slice(0, 8) || Math.floor(Math.random() * 10000)}</td>
+                    <td>${o.user_name || 'عميل'}</td>
                     <td>${o.items?.length || 0} منتجات</td>
                     <td>${o.total?.toLocaleString() || 0} د.ع</td>
                     <td><span class="badge badge-${getStatusClass(o.status)}">${getStatusText(o.status)}</span></td>
@@ -1679,37 +1647,32 @@
                 </tr>
             `).join('');
             
-            if (recentTable) recentTable.innerHTML = html;
-            if (allTable) allTable.innerHTML = html;
+            if (recentTable) recentTable.innerHTML = html || '<tr><td colspan="5" style="text-align:center">لا توجد طلبات</td></tr>';
+            if (allTable) allTable.innerHTML = html || '<tr><td colspan="6" style="text-align:center">لا توجد طلبات</td></tr>';
         }
 
         function getStatusClass(status) {
-            const classes = {
-                'pending': 'warning',
-                'completed': 'success',
-                'cancelled': 'danger'
-            };
+            const classes = { 'pending': 'warning', 'completed': 'success', 'cancelled': 'danger' };
             return classes[status] || 'info';
         }
 
         function getStatusText(status) {
-            const texts = {
-                'pending': 'قيد المعالجة',
-                'completed': 'مكتمل',
-                'cancelled': 'ملغي'
-            };
+            const texts = { 'pending': 'قيد المعالجة', 'completed': 'مكتمل', 'cancelled': 'ملغي' };
             return texts[status] || status;
         }
 
-        function updateOrderStatus(orderId, status) {
-            if (db) {
-                db.collection('orders').doc(orderId).update({ status }).then(() => {
+        async function updateOrderStatus(orderId, status) {
+            if (supabase) {
+                const { error } = await supabase.from('orders').update({ status }).eq('id', orderId);
+                if (error) {
+                    showNotification('حدث خطأ', 'error');
+                } else {
                     showNotification('تم تحديث حالة الطلب', 'success');
                     loadOrders();
-                });
+                }
             } else {
                 let orders = JSON.parse(localStorage.getItem('orders') || '[]');
-                const order = orders.find(o => o.id === orderId);
+                const order = orders.find(o => o.id == orderId);
                 if (order) {
                     order.status = status;
                     localStorage.setItem('orders', JSON.stringify(orders));
@@ -1719,8 +1682,8 @@
             }
         }
 
-        function loadProductsTable() {
-            const products = db ? allProducts : (JSON.parse(localStorage.getItem('products') || '[]') || sampleProducts);
+        async function loadProductsTable() {
+            const products = supabase ? allProducts : (JSON.parse(localStorage.getItem('products') || '[]') || sampleProducts);
             
             document.getElementById('productsTable').innerHTML = products.map(p => `
                 <tr>
@@ -1729,14 +1692,13 @@
                     <td>${p.quantity}</td>
                     <td>${getCategoryName(p.category)}</td>
                     <td>
-                        <button class="btn btn-primary btn-sm" onclick="editProduct(${p.id})">✏️</button>
                         <button class="btn btn-danger btn-sm" onclick="deleteProduct(${p.id})">🗑️</button>
                     </td>
                 </tr>
-            `).join('');
+            `).join('') || '<tr><td colspan="5" style="text-align:center">لا توجد منتجات</td></tr>';
         }
 
-        function addProduct(event) {
+        async function addProduct(event) {
             event.preventDefault();
             const product = {
                 name: document.getElementById('productName').value,
@@ -1744,17 +1706,21 @@
                 quantity: Number(document.getElementById('productQuantity').value),
                 category: document.getElementById('productCategory').value,
                 description: document.getElementById('productDescription').value,
-                image: 'https://image.qwenlm.ai/public_source/12bec8fc-6b9c-4ee0-89a6-73dc780b2c87/1097a31e2-0d5d-45e6-acf6-f3b8de734815.png'
+                image: 'https://image.qwenlm.ai/public_source/12bec8fc-6b9c-4ee0-89a6-73dc780b2c87/1097a31e2-0d5d-45e6-acf6-f3b8de734815.png',
+                created_at: new Date().toISOString()
             };
             
-            if (db) {
-                db.collection('products').add(product).then(() => {
+            if (supabase) {
+                const { error } = await supabase.from('products').insert([product]);
+                if (error) {
+                    showNotification('حدث خطأ: ' + error.message, 'error');
+                } else {
                     showNotification('تم إضافة المنتج', 'success');
                     closeModal('addProductModal');
                     loadProducts();
                     loadProductsTable();
                     loadStats();
-                });
+                }
             } else {
                 let products = JSON.parse(localStorage.getItem('products') || '[]');
                 product.id = Date.now();
@@ -1768,14 +1734,17 @@
             }
         }
 
-        function deleteProduct(productId) {
+        async function deleteProduct(productId) {
             if (confirm('هل أنت متأكد من حذف هذا المنتج؟')) {
-                if (db) {
-                    db.collection('products').doc(productId.toString()).delete().then(() => {
+                if (supabase) {
+                    const { error } = await supabase.from('products').delete().eq('id', productId);
+                    if (error) {
+                        showNotification('حدث خطأ', 'error');
+                    } else {
                         showNotification('تم حذف المنتج', 'success');
                         loadProducts();
                         loadProductsTable();
-                    });
+                    }
                 } else {
                     let products = JSON.parse(localStorage.getItem('products') || '[]');
                     products = products.filter(p => p.id !== productId);
@@ -1787,19 +1756,18 @@
             }
         }
 
-        function loadCustomers() {
-            if (db) {
-                db.collection('users').where('type', '==', 'customer').get().then(snapshot => {
-                    allUsers = [];
-                    snapshot.forEach(doc => {
-                        allUsers.push({ id: doc.id, ...doc.data() });
-                    });
-                    renderCustomers();
-                });
+        async function loadCustomers() {
+            if (supabase) {
+                const { data, error } = await supabase
+                    .from('users')
+                    .select('*')
+                    .eq('type', 'customer');
+                
+                allUsers = data || [];
             } else {
                 allUsers = JSON.parse(localStorage.getItem('users') || '[]');
-                renderCustomers();
             }
+            renderCustomers();
         }
 
         function renderCustomers() {
@@ -1808,10 +1776,10 @@
                     <td>${u.name || 'عميل'}</td>
                     <td>${u.email}</td>
                     <td>${u.phone || '-'}</td>
-                    <td>${allOrders.filter(o => o.userId === u.id).length}</td>
-                    <td>${u.createdAt ? new Date(u.createdAt).toLocaleDateString('ar-IQ') : '-'}</td>
+                    <td>${allOrders.filter(o => o.user_id === u.id).length}</td>
+                    <td>${u.created_at ? new Date(u.created_at).toLocaleDateString('ar-IQ') : '-'}</td>
                 </tr>
-            `).join('') || '<tr><td colspan="5" style="text-align: center;">لا يوجد عملاء</td></tr>';
+            `).join('') || '<tr><td colspan="5" style="text-align:center">لا يوجد عملاء</td></tr>';
         }
 
         function updateSettings(event) {
@@ -1820,7 +1788,7 @@
         }
 
         // Open cart modal
-        document.querySelector('.cart-icon').addEventListener('click', renderCart);
+        document.querySelector('.cart-icon')?.addEventListener('click', renderCart);
 
         // Close modal on outside click
         document.querySelectorAll('.modal').forEach(modal => {
@@ -1837,31 +1805,9 @@
 
 
               <script>
-                              const firebaseConfig = {
-    apiKey: "YOUR_API_KEY",
-    authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-    projectId: "YOUR_PROJECT_ID",
-    storageBucket: "YOUR_PROJECT_ID.appspot.com",
-    messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-    appId: "YOUR_APP_ID"
-};
-
-rules_version = '2';
-service cloud.firestore {
-  match /databases/{database}/documents {
-    match /products/{document} {
-      allow read: if true;
-      allow write: if request.auth != null;
-    }
-    match /orders/{document} {
-      allow read, write: if request.auth != null;
-    }
-    match /users/{document} {
-      allow read: if request.auth != null;
-      allow write: if request.auth != null && request.auth.uid == document;
-    }
-  }
-}
+                              // السطر ~735 في الكود
+const SUPABASE_URL = 'https://xxxxx.supabase.co'; // ضع رابط مشروعك
+const SUPABASE_ANON_KEY = 'your-anon-key-here'; // ضع المفتاح العام
 
 
               </script>
