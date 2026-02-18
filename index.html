@@ -4,7 +4,123 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>منصة B2B للمواد الغذائية - العراق</title>
-   
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://unpkg.com/@zxing/library@latest"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%); min-height: 100vh; }
+        
+        .header { background: linear-gradient(135deg, #2c5f2d 0%, #97bc62 100%); color: white; padding: 1.5rem 2rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .header.admin { background: linear-gradient(135deg, #1a237e 0%, #3f51b5 100%); }
+        .header.buyer { background: linear-gradient(135deg, #1b5e20 0%, #43a047 100%); }
+        @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.75; } }
+        .header-content { max-width: 1400px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; }
+        .logo { font-size: 1.8rem; font-weight: bold; display: flex; align-items: center; gap: 0.5rem; }
+        .nav-tabs { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+        .nav-tab { background: rgba(255,255,255,0.2); border: none; color: white; padding: 0.7rem 1.2rem; border-radius: 8px; cursor: pointer; transition: all 0.3s; font-size: 0.95rem; }
+        .nav-tab:hover { background: rgba(255,255,255,0.3); transform: translateY(-2px); }
+        .nav-tab.active { background: white; color: #2c5f2d; font-weight: bold; }
+        .header.admin .nav-tab.active { color: #1a237e; }
+        .badge { background: #ff4444; color: white; border-radius: 50%; padding: 0.2rem 0.5rem; font-size: 0.75rem; margin-right: 0.3rem; }
+        .user-info { background: rgba(255,255,255,0.2); padding: 0.5rem 1rem; border-radius: 8px; display: flex; align-items: center; gap: 0.5rem; }
+        
+        .container { max-width: 1400px; margin: 2rem auto; padding: 0 1rem; }
+        .section { background: white; padding: 2rem; border-radius: 16px; box-shadow: 0 8px 16px rgba(0,0,0,0.1); margin-bottom: 2rem; }
+        
+        .search-filter-bar { background: white; padding: 1.5rem; border-radius: 12px; margin-bottom: 2rem; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+        .search-box { display: flex; gap: 1rem; margin-bottom: 1rem; flex-wrap: wrap; }
+        .search-input { flex: 1; min-width: 250px; padding: 0.8rem 1.2rem; border: 2px solid #ddd; border-radius: 8px; font-size: 1rem; }
+        .search-input:focus { outline: none; border-color: #2c5f2d; }
+        .filter-group { display: flex; gap: 1rem; flex-wrap: wrap; align-items: center; }
+        .filter-dropdown { position: relative; }
+        .filter-btn { padding: 0.8rem 1.2rem; background: #f5f5f5; border: 2px solid #ddd; border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 0.5rem; font-size: 0.95rem; }
+        .filter-btn:hover { background: #e8e8e8; }
+        .filter-btn.active { background: #2c5f2d; color: white; border-color: #2c5f2d; }
+        .dropdown-menu { position: absolute; top: 100%; right: 0; margin-top: 0.5rem; background: white; border: 2px solid #ddd; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); min-width: 200px; max-height: 300px; overflow-y: auto; z-index: 100; }
+        .dropdown-item { padding: 0.8rem 1rem; cursor: pointer; display: flex; align-items: center; gap: 0.5rem; }
+        .dropdown-item:hover { background: #f5f5f5; }
+        .dropdown-item input[type="checkbox"] { width: 18px; height: 18px; cursor: pointer; }
+        
+        .products-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1.5rem; }
+        .product-card { background: white; border-radius: 12px; padding: 1.5rem; box-shadow: 0 4px 8px rgba(0,0,0,0.1); transition: all 0.3s; }
+        .product-card:hover { transform: translateY(-5px); box-shadow: 0 8px 16px rgba(0,0,0,0.15); }
+        .product-image { width: 100%; height: 200px; background: #f5f5f5; border-radius: 8px; display: flex; align-items: center; justify-content: center; margin-bottom: 1rem; overflow: hidden; position: relative; }
+        .product-name { font-size: 1.2rem; font-weight: bold; margin-bottom: 0.5rem; color: #333; }
+        .product-company { color: #666; font-size: 0.9rem; margin-bottom: 0.5rem; }
+        .product-price { font-size: 1.5rem; font-weight: bold; color: #2c5f2d; margin: 1rem 0; }
+        .product-badges { display: flex; flex-wrap: wrap; gap: 0.5rem; margin: 0.5rem 0; }
+        .product-badge { padding: 0.3rem 0.8rem; border-radius: 20px; font-size: 0.85rem; display: inline-block; }
+        .badge-success { background: #e8f5e9; color: #2e7d32; }
+        .badge-warning { background: #fff3e0; color: #f57c00; }
+        .badge-danger { background: #ffebee; color: #c62828; }
+        .badge-info { background: #e3f2fd; color: #1976d2; }
+        
+        .btn { padding: 0.8rem 1.5rem; border: none; border-radius: 8px; cursor: pointer; font-size: 1rem; transition: all 0.3s; font-weight: 500; }
+        .btn-primary { background: #2c5f2d; color: white; }
+        .btn-primary:hover { background: #1e4620; transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.2); }
+        .btn-secondary { background: #f5f5f5; color: #333; }
+        .btn-secondary:hover { background: #e0e0e0; }
+        .btn-danger { background: #c62828; color: white; }
+        .btn-danger:hover { background: #a02020; }
+        
+        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); display: flex; align-items: center; justify-content: center; z-index: 1000; backdrop-filter: blur(4px); }
+        .modal-box { background: white; padding: 2rem; border-radius: 16px; max-width: 600px; width: 90%; max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 40px rgba(0,0,0,0.3); }
+        .modal-close { float: left; background: none; border: none; font-size: 2rem; cursor: pointer; color: #999; }
+        .modal-close:hover { color: #333; }
+        
+        .form-group { margin-bottom: 1rem; }
+        .form-group label { display: block; margin-bottom: 0.5rem; font-weight: 500; color: #333; }
+        .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 0.8rem; border: 2px solid #ddd; border-radius: 8px; font-size: 1rem; }
+        .form-group input:focus, .form-group select:focus, .form-group textarea:focus { outline: none; border-color: #2c5f2d; }
+        
+        .image-upload-area { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 2rem; border: 3px dashed #ddd; border-radius: 12px; background: #f9f9f9; transition: all 0.3s; cursor: pointer; }
+        .image-upload-area:hover { border-color: #2c5f2d; background: #f0f8f0; transform: scale(1.01); }
+        .upload-icon { font-size: 3rem; margin-bottom: 0.5rem; }
+        .upload-text { font-weight: bold; margin-bottom: 0.3rem; font-size: 1.1rem; color: #333; }
+        .upload-hint { font-size: 0.85rem; color: #666; text-align: center; line-height: 1.6; }
+        .images-preview-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 1rem; margin-top: 1rem; }
+        .preview-image-item { position: relative; border-radius: 8px; overflow: hidden; border: 2px solid #ddd; transition: all 0.3s; background: #f5f5f5; }
+        .preview-image-item:hover { border-color: #2c5f2d; box-shadow: 0 4px 8px rgba(0,0,0,0.1); transform: translateY(-2px); }
+        .preview-image-item img { width: 100%; height: 120px; object-fit: cover; display: block; }
+        .remove-preview-btn { position: absolute; top: 5px; left: 5px; background: rgba(255, 68, 68, 0.9); color: white; border: none; border-radius: 50%; width: 28px; height: 28px; cursor: pointer; font-size: 1.1rem; font-weight: bold; display: flex; align-items: center; justify-content: center; transition: all 0.2s; }
+        .remove-preview-btn:hover { background: #c62828; transform: scale(1.1); }
+        
+        .cart-item { display: flex; justify-content: space-between; align-items: center; padding: 1rem; border-bottom: 1px solid #eee; }
+        .quantity-selector { display: flex; align-items: center; gap: 0.5rem; }
+        .quantity-btn { width: 30px; height: 30px; border: 2px solid #2c5f2d; background: white; border-radius: 5px; cursor: pointer; font-weight: bold; color: #2c5f2d; }
+        .quantity-btn:hover { background: #2c5f2d; color: white; }
+        
+        .empty-state { text-align: center; padding: 3rem; color: #999; }
+        .empty-state-icon { font-size: 4rem; margin-bottom: 1rem; }
+        
+        .admin-tabs { display: flex; gap: 1rem; margin-bottom: 2rem; border-bottom: 2px solid #eee; padding-bottom: 1rem; flex-wrap: wrap; }
+        .admin-tab { padding: 0.7rem 1.5rem; background: #f5f5f5; border: none; border-radius: 8px; cursor: pointer; transition: all 0.3s; }
+        .admin-tab:hover { background: #e0e0e0; }
+        .admin-tab.active { background: #1a237e; color: white; }
+        
+        .supplier-card { background: white; padding: 1.5rem; border-radius: 12px; border: 1px solid #ddd; margin-bottom: 1rem; }
+        .supplier-card.pending { background: #fff3e0; border-color: #f57c00; }
+        .supplier-card.inactive { background: #ffebee; border-color: #c62828; }
+        
+        .order-status-select { padding: 0.5rem; border: 2px solid #ddd; border-radius: 6px; font-size: 0.9rem; }
+        .category-item { background: #f5f5f5; padding: 1rem; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; }
+        
+        .scanner-container { position: relative; width: 100%; max-width: 500px; margin: 0 auto; }
+        .scanner-video { width: 100%; border-radius: 12px; background: #000; }
+        .scanner-overlay { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 70%; height: 50%; border: 3px solid #4caf50; border-radius: 12px; box-shadow: 0 0 0 9999px rgba(0,0,0,0.5); }
+        .scanner-line { position: absolute; width: 100%; height: 2px; background: #4caf50; top: 0; animation: scan 2s linear infinite; }
+        @keyframes scan { 0%, 100% { top: 0; } 50% { top: 100%; } }
+        .scanner-hint { text-align: center; margin-top: 1rem; color: #666; font-size: 0.9rem; }
+        .barcode-result { background: #e8f5e9; padding: 1rem; border-radius: 8px; margin: 1rem 0; border: 2px solid #4caf50; }
+        .scan-btn { background: linear-gradient(135deg, #4caf50 0%, #45a049 100%); }
+        
+        @media (max-width: 768px) {
+            .header-content { flex-direction: column; align-items: stretch; }
+            .nav-tabs { justify-content: center; }
+            .products-grid { grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); }
+        }
     </style>
 </head>
 <body>
@@ -12,165 +128,6 @@
     
     <script type="text/babel">
         const { useState, useEffect } = React;
-
-       
-        const SUPABASE_URL  = 'https://frolmfzkljlvqstvbrmt.supabase.co';   // ← غيّر هذا
-        const SUPABASE_KEY  = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZyb2xtZnprbGpsdnFzdHZicm10Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzEyMzE3NTUsImV4cCI6MjA4NjgwNzc1NX0.z1NMSzEvq0rCbiEXL1VLYhnf-4mSfoWtYaaov-1EGv4';                   // ← غيّر هذا
-
-        const SUPABASE_CONFIGURED =
-            SUPABASE_URL !== 'https://YOUR_PROJECT_ID.supabase.co' &&
-            SUPABASE_KEY !== 'YOUR_ANON_PUBLIC_KEY' &&
-            SUPABASE_URL.includes('.supabase.co') &&
-            SUPABASE_KEY.length > 20;
-
-        const supabase = SUPABASE_CONFIGURED && window.supabase
-            ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY)
-            : null;
-
-        // =====================================================
-        // Supabase DB Helpers
-        // =====================================================
-
-        // Generic fetch all rows from a table
-        const dbGet = async (table) => {
-            if (!supabase) return [];
-            const { data, error } = await supabase.from(table).select('*');
-            if (error) { console.error('dbGet error:', table, error); return []; }
-            return data || [];
-        };
-
-        // Upsert (insert or update by primary key)
-        const dbUpsert = async (table, row) => {
-            if (!supabase) return;
-            const { error } = await supabase.from(table).upsert(row);
-            if (error) console.error('dbUpsert error:', table, error);
-        };
-
-        // Delete by id
-        const dbDelete = async (table, id) => {
-            if (!supabase) return;
-            const { error } = await supabase.from(table).delete().eq('id', id);
-            if (error) console.error('dbDelete error:', table, error);
-        };
-
-        // Delete by a custom column match
-        const dbDeleteWhere = async (table, col, val) => {
-            if (!supabase) return;
-            const { error } = await supabase.from(table).delete().eq(col, val);
-            if (error) console.error('dbDeleteWhere error:', table, col, error);
-        };
-
-        // Generic update one field of one row
-        const dbUpdate = async (table, id, patch) => {
-            if (!supabase) return;
-            const { error } = await supabase.from(table).update(patch).eq('id', id);
-            if (error) console.error('dbUpdate error:', table, error);
-        };
-
-        // =====================================================
-        // Local in-memory fallback (keeps UI fast while async ops happen)
-        // =====================================================
-        const _memStore = {};
-        const safeGetJSON  = (key, fallback = null) => {
-            try { const v = localStorage.getItem(key); return v ? JSON.parse(v) : fallback; }
-            catch(e) { return _memStore[key] !== undefined ? _memStore[key] : fallback; }
-        };
-        const safeSetJSON  = (key, value) => {
-            try { localStorage.setItem(key, JSON.stringify(value)); } catch(e) {}
-            _memStore[key] = value;
-        };
-        const safeStorage  = (action, key, value) => {
-            if (action === 'get')    return safeGetJSON(key);
-            if (action === 'set')    return safeSetJSON(key, value);
-            if (action === 'remove') { try { localStorage.removeItem(key); } catch(e) {} delete _memStore[key]; }
-            if (action === 'clear')  { try { localStorage.clear(); } catch(e) {} Object.keys(_memStore).forEach(k => delete _memStore[k]); }
-        };
-
-        // =====================================================
-        // Data mapping helpers: Supabase column names ↔ app field names
-        // =====================================================
-        const mapSupplier = (r) => ({
-            id: r.id, username: r.username, password: r.password,
-            companyName: r.company_name, status: r.status, createdAt: r.created_at
-        });
-        const supplierToDb = (s) => ({
-            id: s.id, username: s.username, password: s.password,
-            company_name: s.companyName, status: s.status || 'pending',
-            created_at: s.createdAt || new Date().toISOString()
-        });
-
-        const mapBuyer = (r) => ({
-            id: r.id, username: r.username, password: r.password,
-            storeName: r.store_name, ownerName: r.owner_name,
-            phone: r.phone, createdAt: r.created_at
-        });
-        const buyerToDb = (b) => ({
-            id: b.id, username: b.username, password: b.password,
-            store_name: b.storeName, owner_name: b.ownerName,
-            phone: b.phone, created_at: b.createdAt || new Date().toISOString()
-        });
-
-        const mapProduct = (r) => ({
-            id: r.id, name: r.name, company: r.company,
-            category: r.category, price: r.price, unit: r.unit,
-            stock: r.stock, expiryDate: r.expiry_date,
-            images: r.images || ['📦'], supplierId: r.supplier_id,
-            barcode: r.barcode, createdAt: r.created_at
-        });
-        const productToDb = (p) => ({
-            id: String(p.id), name: p.name, company: p.company,
-            category: p.category, price: p.price, unit: p.unit,
-            stock: p.stock, expiry_date: p.expiryDate || null,
-            images: p.images || ['📦'], supplier_id: String(p.supplierId),
-            barcode: p.barcode || null, created_at: p.createdAt || new Date().toISOString()
-        });
-
-        const mapOrder = (r) => ({
-            id: r.id, orderNumber: r.order_number, mainOrderNumber: r.main_order_number,
-            trackingNumber: r.tracking_number, buyerId: r.buyer_id,
-            buyerStoreName: r.buyer_store_name, supplierId: r.supplier_id,
-            storeName: r.store_name, ownerName: r.owner_name,
-            phone: r.phone, address: r.address, notes: r.notes,
-            deliveryMethod: r.delivery_method,
-            latitude: r.latitude, longitude: r.longitude,
-            locationAccuracy: r.location_accuracy,
-            items: r.items || [], subtotal: r.subtotal,
-            deliveryFee: r.delivery_fee, total: r.total,
-            status: r.status, deliveryStatus: r.delivery_status,
-            driverId: r.driver_id, driverName: r.driver_name,
-            trackingHistory: r.tracking_history || [],
-            isArchived: r.is_archived, archivedAt: r.archived_at,
-            date: r.date
-        });
-        const orderToDb = (o) => ({
-            id: String(o.id), order_number: o.orderNumber,
-            main_order_number: o.mainOrderNumber, tracking_number: o.trackingNumber,
-            buyer_id: o.buyerId || null, buyer_store_name: o.buyerStoreName || null,
-            supplier_id: o.supplierId ? String(o.supplierId) : null,
-            store_name: o.storeName, owner_name: o.ownerName,
-            phone: o.phone, address: o.address, notes: o.notes,
-            delivery_method: o.deliveryMethod,
-            latitude: o.latitude || null, longitude: o.longitude || null,
-            location_accuracy: o.locationAccuracy || null,
-            items: o.items || [], subtotal: o.subtotal,
-            delivery_fee: o.deliveryFee, total: o.total,
-            status: o.status || 'pending', delivery_status: o.deliveryStatus || 'pending',
-            driver_id: o.driverId || null, driver_name: o.driverName || null,
-            tracking_history: o.trackingHistory || [],
-            is_archived: o.isArchived || false,
-            archived_at: o.archivedAt || null,
-            date: o.date || new Date().toISOString()
-        });
-
-        const mapDriver = (r) => ({
-            id: r.id, name: r.name, phone: r.phone,
-            vehicle: r.vehicle, status: r.status, createdAt: r.created_at
-        });
-        const driverToDb = (d) => ({
-            id: String(d.id), name: d.name, phone: d.phone,
-            vehicle: d.vehicle, status: d.status || 'active',
-            created_at: d.createdAt || new Date().toISOString()
-        });
 
         function ImageSlider({ images, defaultImage }) {
             const [current, setCurrent] = useState(0);
@@ -255,117 +212,56 @@
             return <span className={className}>{text}</span>;
         }
 
-        // Old safeStorage helpers kept above (now wraps Supabase).
+        // ===== Safe Storage - يحل مشكلة Edge Tracking Prevention =====
+        // نستخدم in-memory + localStorage مع fallback كامل
+        const _memStore = {};
+        const _storage = {
+            getItem: (k) => { try { return localStorage.getItem(k); } catch(e) { return _memStore[k] || null; } },
+            setItem: (k, v) => { try { localStorage.setItem(k, v); } catch(e) {} _memStore[k] = v; },
+            removeItem: (k) => { try { localStorage.removeItem(k); } catch(e) {} delete _memStore[k]; },
+            clear: () => { try { localStorage.clear(); } catch(e) {} Object.keys(_memStore).forEach(k => delete _memStore[k]); }
+        };
+        const safeStorage = (action, key, value) => {
+            if (action === 'get') return _storage.getItem(key);
+            if (action === 'set') return _storage.setItem(key, value);
+            if (action === 'remove') return _storage.removeItem(key);
+            if (action === 'clear') return _storage.clear();
+        };
+        const safeGetJSON = (key, fallback = null) => {
+            try { const v = _storage.getItem(key); return v ? JSON.parse(v) : fallback; } catch(e) { return fallback; }
+        };
+        const safeSetJSON = (key, value) => {
+            try { _storage.setItem(key, JSON.stringify(value)); } catch(e) {}
+        };
 
         function App() {
             const [currentTab, setCurrentTab] = useState('shop');
             const [adminTab, setAdminTab] = useState('suppliers');
-            const [appLoading, setAppLoading] = useState(true);   // ← loading overlay
-
-            // ── Core data ──────────────────────────────────────────
-            const [products,       setProducts]       = useState([]);
-            const [buyers,         setBuyers]         = useState([]);
-            const [currentBuyer,   setCurrentBuyer]   = useState(() => safeGetJSON('currentBuyer', null));
-            const [cart,           setCart]           = useState([]);
-            const [orders,         setOrders]         = useState([]);
-            const [archivedOrders, setArchivedOrders] = useState([]);
-            const [categories,     setCategories]     = useState(['الكل']);
-            const [suppliers,      setSuppliers]      = useState([]);
-            const [deliveryDrivers,setDeliveryDrivers]= useState([]);
-
-            // ── Supabase initial data load ─────────────────────────
-            useEffect(() => {
-                async function loadAllData() {
-                    // If Supabase is not configured, load from localStorage and finish
-                    if (!SUPABASE_CONFIGURED || !supabase) {
-                        setSuppliers(safeGetJSON('suppliers', []));
-                        setBuyers(safeGetJSON('buyers', []));
-                        setProducts(safeGetJSON('products', []));
-                        const allOrders = safeGetJSON('orders', []);
-                        setOrders(allOrders.filter(o => !o.isArchived));
-                        setArchivedOrders(allOrders.filter(o => o.isArchived));
-                        const cats = safeGetJSON('categories', ['الكل', 'حبوب', 'بقالة', 'زيوت', 'معكرونة', 'ألبان']);
-                        setCategories(cats);
-                        setDeliveryDrivers(safeGetJSON('deliveryDrivers', []));
-                        const savedBuyer = safeGetJSON('currentBuyer', null);
-                        if (savedBuyer) setCart(safeGetJSON('cart_' + savedBuyer.id, []));
-                        setAppLoading(false);
-                        return;
-                    }
-                    try {
-                        const [
-                            suppliersRaw, buyersRaw, productsRaw,
-                            ordersRaw,    catsRaw,   driversRaw
-                        ] = await Promise.all([
-                            dbGet('suppliers'), dbGet('buyers'), dbGet('products'),
-                            dbGet('orders'),    dbGet('categories'), dbGet('delivery_drivers')
-                        ]);
-
-                        setSuppliers(suppliersRaw.map(mapSupplier));
-                        setBuyers(buyersRaw.map(mapBuyer));
-                        setProducts(productsRaw.map(mapProduct));
-
-                        const activeOrds   = ordersRaw.filter(o => !o.is_archived).map(mapOrder);
-                        const archivedOrds = ordersRaw.filter(o => o.is_archived).map(mapOrder);
-                        setOrders(activeOrds);
-                        setArchivedOrders(archivedOrds);
-
-                        const catNames = catsRaw.map(c => c.name);
-                        if (!catNames.includes('الكل')) catNames.unshift('الكل');
-                        setCategories(catNames);
-
-                        setDeliveryDrivers(driversRaw.map(mapDriver));
-
-                        // Restore logged-in buyer's cart
-                        const savedBuyer = safeGetJSON('currentBuyer', null);
-                        if (savedBuyer) {
-                            const { data: cartData } = await supabase
-                                .from('buyer_carts').select('items').eq('buyer_id', savedBuyer.id).single();
-                            if (cartData) setCart(cartData.items || []);
-                        }
-
-                        // Restore logged-in supplier session
-                        const savedSupplier = safeGetJSON('currentSupplier', null);
-                        if (savedSupplier) setCurrentSupplier(savedSupplier);
-
-                    } catch (err) {
-                        console.error('Failed to load data from Supabase:', err);
-                        // Fall back to localStorage on error
-                        setSuppliers(safeGetJSON('suppliers', []));
-                        setBuyers(safeGetJSON('buyers', []));
-                        setProducts(safeGetJSON('products', []));
-                        const allOrders = safeGetJSON('orders', []);
-                        setOrders(allOrders.filter(o => !o.isArchived));
-                        setArchivedOrders(allOrders.filter(o => o.isArchived));
-                        const cats = safeGetJSON('categories', ['الكل', 'حبوب', 'بقالة', 'زيوت', 'معكرونة', 'ألبان']);
-                        setCategories(cats);
-                        setDeliveryDrivers(safeGetJSON('deliveryDrivers', []));
-                        const savedBuyer = safeGetJSON('currentBuyer', null);
-                        if (savedBuyer) setCart(safeGetJSON('cart_' + savedBuyer.id, []));
-                    }
-                    setAppLoading(false);
-                }
-                loadAllData();
-            }, []);
-
-            // Save cart to Supabase (or localStorage fallback) whenever it changes
-            useEffect(() => {
-                if (!currentBuyer) return;
-                if (supabase) {
-                    supabase.from('buyer_carts').upsert({
-                        buyer_id: currentBuyer.id,
-                        items: cart,
-                        updated_at: new Date().toISOString()
-                    });
-                } else {
-                    safeSetJSON('cart_' + currentBuyer.id, cart);
-                }
-            }, [cart, currentBuyer]);
-
-            // ── Auth state ─────────────────────────────────────────
+            
+            const [products, setProducts] = useState(() => {
+                return safeGetJSON('products', []);
+            });
+            
+            // نظام المتاجر (المشترين)
+            const [buyers, setBuyers] = useState(() => {
+                return safeGetJSON('buyers', []);
+            });
+            const [currentBuyer, setCurrentBuyer] = useState(() => safeGetJSON('currentBuyer', null));
             const [showBuyerAuth, setShowBuyerAuth] = useState(false);
             const [buyerAuthMode, setBuyerAuthMode] = useState('login'); // 'login' | 'register'
             const [buyerAuthData, setBuyerAuthData] = useState({ username: '', password: '', storeName: '', ownerName: '', phone: '' });
+
+            const [cart, setCart] = useState(() => {
+                const buyer = safeGetJSON('currentBuyer', null);
+                const key = buyer ? 'cart_' + buyer.id : 'cart_guest';
+                return safeGetJSON(key, []);
+            });
+            const [orders, setOrders] = useState(() => {
+                return safeGetJSON('orders', []);
+            });
+            const [archivedOrders, setArchivedOrders] = useState(() => {
+                return safeGetJSON('archivedOrders', []);
+            });
             const [showArchived, setShowArchived] = useState(false);
             
             const [searchTerm, setSearchTerm] = useState('');
@@ -375,7 +271,9 @@
             const [showSupplierDropdown, setShowSupplierDropdown] = useState(false);
             const [showCompanyDropdown, setShowCompanyDropdown] = useState(false);
             
-            const [categories, setCategories] = useState(['الكل']);  // loaded from Supabase above
+            const [categories, setCategories] = useState(() => {
+                return safeGetJSON('categories', ['الكل', 'حبوب', 'بقالة', 'زيوت', 'معكرونة', 'ألبان']);
+            });
             const [newCategory, setNewCategory] = useState('');
             
             const [newProduct, setNewProduct] = useState({ 
@@ -387,6 +285,9 @@
             const [productQuantities, setProductQuantities] = useState({});
             
             const [currentSupplier, setCurrentSupplier] = useState(() => safeGetJSON('currentSupplier', null));
+            const [suppliers, setSuppliers] = useState(() => {
+                return safeGetJSON('suppliers', []);
+            });
             const [admin, setAdmin] = useState(null);
             const [showAuthModal, setShowAuthModal] = useState(false);
             const [showLogin, setShowLogin] = useState(true);
@@ -414,7 +315,12 @@
             const [orderSearchTerm, setOrderSearchTerm] = useState('');
             const [supplierOrderSearchTerm, setSupplierOrderSearchTerm] = useState('');
             const [selectedBuyerOrders, setSelectedBuyerOrders] = useState(new Set());
-            const [hiddenBuyerOrders, setHiddenBuyerOrders] = useState(new Set());
+            // قائمة الطلبات المخفية من عرض المتجر فقط (لا تُحذف من النظام)
+            const [hiddenBuyerOrders, setHiddenBuyerOrders] = useState(() => {
+                const buyer = safeGetJSON('currentBuyer', null);
+                if (!buyer) return new Set();
+                return new Set(safeGetJSON('hidden_orders_' + buyer.id, []));
+            });
             const [selectedBuyersAdmin, setSelectedBuyersAdmin] = useState(new Set());
             const [buyerSearchAdmin, setBuyerSearchAdmin] = useState('');
             const [scannedBarcode, setScannedBarcode] = useState('');
@@ -422,17 +328,46 @@
             const [scannerError, setScannerError] = useState('');
             const [isUploadingImages, setIsUploadingImages] = useState(false);
             const [uploadProgress, setUploadProgress] = useState(0);
-
+            
+            const [deliveryDrivers, setDeliveryDrivers] = useState(() => {
+                return safeGetJSON('deliveryDrivers', []);
+            });
             const [showTrackingModal, setShowTrackingModal] = useState(false);
             const [trackingNumber, setTrackingNumber] = useState('');
             const [trackingResult, setTrackingResult] = useState(null);
             const [showOrderConfirmation, setShowOrderConfirmation] = useState(false);
             const [confirmedOrders, setConfirmedOrders] = useState([]);
-
-            // Keep supplier session in localStorage for page refresh
+            
             useEffect(() => {
-                if (currentSupplier) safeSetJSON('currentSupplier', currentSupplier);
+                safeSetJSON('products', products);
+            }, [products]);
+            
+            useEffect(() => {
+                const key = currentBuyer ? 'cart_' + currentBuyer.id : 'cart_guest';
+                safeSetJSON(key, cart);
+            }, [cart, currentBuyer]);
+            
+            useEffect(() => {
+                safeSetJSON('orders', orders);
+            }, [orders]);
+            
+            useEffect(() => {
+                safeSetJSON('archivedOrders', archivedOrders);
+            }, [archivedOrders]);
+            
+            useEffect(() => {
+                safeSetJSON('categories', categories);
+            }, [categories]);
+            
+            useEffect(() => {
+                if (currentSupplier) {
+                    safeSetJSON('currentSupplier', currentSupplier);
+                }
             }, [currentSupplier]);
+            
+            useEffect(() => {
+                safeSetJSON('deliveryDrivers', deliveryDrivers);
+            }, [deliveryDrivers]);
             
             const uniqueSuppliers = [...new Set(products.map(p => {
                 const supplier = suppliers.find(s => s.id === p.supplierId);
@@ -502,7 +437,7 @@
             const totalItems = cart.reduce((sum, i) => sum + i.qty, 0);
             const totalAmount = cart.reduce((sum, i) => sum + (i.price * i.qty), 0);
             
-            const login = async (e) => {
+            const login = (e) => {
                 e.preventDefault();
                 if (authData.username === 'admin' && authData.password === 'admin123') {
                     setCurrentSupplier(null);
@@ -515,8 +450,14 @@
                 } else {
                     const found = suppliers.find(s => s.username === authData.username && s.password === authData.password);
                     if (found) {
-                        if (found.status === 'pending') { alert('حسابك قيد المراجعة من قبل الإدارة. يرجى الانتظار.'); return; }
-                        if (found.status === 'inactive') { alert('تم تعطيل حسابك. يرجى التواصل مع الإدارة.'); return; }
+                        if (found.status === 'pending') {
+                            alert('حسابك قيد المراجعة من قبل الإدارة. يرجى الانتظار.');
+                            return;
+                        }
+                        if (found.status === 'inactive') {
+                            alert('تم تعطيل حسابك. يرجى التواصل مع الإدارة.');
+                            return;
+                        }
                         setAdmin(null);
                         setCurrentSupplier(found);
                         safeSetJSON('currentSupplier', found);
@@ -530,18 +471,24 @@
                 }
             };
             
-            const register = async (e) => {
+            const register = (e) => {
                 e.preventDefault();
-                if (suppliers.find(s => s.username === authData.username)) { alert('اسم المستخدم موجود'); return; }
+                if (suppliers.find(s => s.username === authData.username)) {
+                    alert('اسم المستخدم موجود');
+                    return;
+                }
+                
+                // إنشاء ID فريد بناءً على timestamp + random
                 const uniqueId = Date.now() + '-' + Math.random().toString(36).substr(2, 9);
+                
                 const newSupplier = { 
-                    id: uniqueId, username: authData.username, password: authData.password,
-                    companyName: authData.companyName, status: 'pending',
+                    id: uniqueId,
+                    ...authData,
+                    status: 'pending',
                     createdAt: new Date().toISOString()
                 };
-                await dbUpsert('suppliers', supplierToDb(newSupplier));
                 const updatedSuppliers = [...suppliers, newSupplier];
-                if (!supabase) safeSetJSON('suppliers', updatedSuppliers);
+                safeSetJSON('suppliers', updatedSuppliers);
                 setSuppliers(updatedSuppliers);
                 setShowAuthModal(false);
                 setAuthData({ username: '', password: '', companyName: '' });
@@ -557,46 +504,44 @@
             };
 
             // تسجيل دخول المتجر (المشتري)
-            const buyerLogin = async (e) => {
+            const buyerLogin = (e) => {
                 e.preventDefault();
                 const found = buyers.find(b => b.username === buyerAuthData.username && b.password === buyerAuthData.password);
                 if (!found) { alert('❌ اسم المستخدم أو كلمة المرور غير صحيحة'); return; }
                 setCurrentBuyer(found);
                 safeSetJSON('currentBuyer', found);
-                // تحميل سلة هذا المتجر من Supabase
-                if (supabase) {
-                    const { data: cartData } = await supabase.from('buyer_carts').select('items').eq('buyer_id', found.id).single();
-                    setCart(cartData ? cartData.items || [] : []);
-                    const { data: hiddenData } = await supabase.from('buyer_hidden_orders').select('order_id').eq('buyer_id', found.id);
-                    setHiddenBuyerOrders(new Set((hiddenData || []).map(r => r.order_id)));
-                } else {
-                    setCart(safeGetJSON('cart_' + found.id, []));
-                    setHiddenBuyerOrders(new Set(safeGetJSON('hidden_orders_' + found.id, [])));
-                }
+                // تحميل سلة هذا المتجر
+                setCart(safeGetJSON('cart_' + found.id, []));
+                // تحميل الطلبات المخفية لهذا المتجر
+                setHiddenBuyerOrders(new Set(safeGetJSON('hidden_orders_' + found.id, [])));
                 setShowBuyerAuth(false);
                 setBuyerAuthData({ username: '', password: '', storeName: '', ownerName: '', phone: '' });
                 alert('✅ أهلاً ' + found.storeName + '!\nتم استعادة سلتك بنجاح 🛒');
             };
 
             // تسجيل حساب متجر جديد
-            const buyerRegister = async (e) => {
+            const buyerRegister = (e) => {
                 e.preventDefault();
                 if (!buyerAuthData.username || !buyerAuthData.password || !buyerAuthData.storeName) {
-                    alert('⚠️ يرجى ملء جميع الحقول المطلوبة'); return;
+                    alert('⚠️ يرجى ملء جميع الحقول المطلوبة');
+                    return;
                 }
                 if (buyers.find(b => b.username === buyerAuthData.username)) {
-                    alert('⚠️ اسم المستخدم موجود مسبقاً'); return;
+                    alert('⚠️ اسم المستخدم موجود مسبقاً');
+                    return;
                 }
                 const newBuyer = {
                     id: 'buyer_' + Date.now(),
-                    username: buyerAuthData.username, password: buyerAuthData.password,
-                    storeName: buyerAuthData.storeName, ownerName: buyerAuthData.ownerName,
-                    phone: buyerAuthData.phone, createdAt: new Date().toISOString()
+                    username: buyerAuthData.username,
+                    password: buyerAuthData.password,
+                    storeName: buyerAuthData.storeName,
+                    ownerName: buyerAuthData.ownerName,
+                    phone: buyerAuthData.phone,
+                    createdAt: new Date().toISOString()
                 };
-                await dbUpsert('buyers', buyerToDb(newBuyer));
                 const updated = [...buyers, newBuyer];
-                if (!supabase) safeSetJSON('buyers', updated);
                 setBuyers(updated);
+                safeSetJSON('buyers', updated);
                 setCurrentBuyer(newBuyer);
                 safeSetJSON('currentBuyer', newBuyer);
                 setCart([]);
@@ -607,6 +552,9 @@
 
             // تسجيل خروج المشتري
             const buyerLogout = () => {
+                if (currentBuyer) {
+                    safeStorage('set', 'cart_' + currentBuyer.id, JSON.stringify(cart));
+                }
                 setCurrentBuyer(null);
                 safeStorage('remove', 'currentBuyer');
                 setCart([]);
@@ -777,8 +725,10 @@
                 }));
             };
             
-            const handleAddProduct = async (e) => {
+            const handleAddProduct = (e) => {
                 e.preventDefault();
+                
+                // إضافة قيم افتراضية للحقول الفارغة
                 const productData = {
                     name: newProduct.name || 'منتج بدون اسم',
                     company: newProduct.company || 'غير محدد',
@@ -791,20 +741,21 @@
                 };
                 
                 if (isEditing) {
-                    const updated = products.map(p => p.id === editingProductId ? {
-                        ...productData, id: editingProductId, supplierId: p.supplierId
-                    } : p);
-                    setProducts(updated);
-                    await dbUpsert('products', productToDb({...productData, id: editingProductId, supplierId: currentSupplier.id}));
+                    setProducts(products.map(p => p.id === editingProductId ? {
+                        ...productData,
+                        id: editingProductId,
+                        supplierId: p.supplierId
+                    } : p));
                     alert('✅ تم تحديث المنتج!');
                     setIsEditing(false);
                     setEditingProductId(null);
                 } else {
-                    const product = { ...productData, id: String(Date.now()), supplierId: currentSupplier.id };
-                    const newProds = [...products, product];
-                    setProducts(newProds);
-                    if (!supabase) safeSetJSON('products', newProds);
-                    await dbUpsert('products', productToDb(product));
+                    const product = {
+                        ...productData,
+                        id: Date.now(),
+                        supplierId: currentSupplier.id
+                    };
+                    setProducts([...products, product]);
                     alert('✅ تم إضافة المنتج!\nاسم الشركة: ' + currentSupplier.companyName + '\nمعرف المورد: ' + currentSupplier.id);
                 }
                 setNewProduct({ name: '', company: '', category: '', price: '', unit: '', stock: '', expiryDate: '', images: [], imagePreviews: [] });
@@ -828,39 +779,42 @@
                 window.scrollTo({ top: 0, behavior: 'smooth' });
             };
             
-            const deleteProduct = async (id) => {
+            const deleteProduct = (id) => {
                 if (confirm('هل تريد حذف هذا المنتج؟')) {
                     setProducts(products.filter(p => p.id !== id));
-                    await dbDelete('products', String(id));
                     alert('تم الحذف!');
                 }
             };
             
-            const addCategory = async () => {
+            const addCategory = () => {
                 if (newCategory && !categories.includes(newCategory)) {
                     setCategories([...categories, newCategory]);
-                    await supabase.from('categories').insert({ name: newCategory });
                     setNewCategory('');
                     alert('تم إضافة التصنيف!');
                 }
             };
             
-            const deleteCategory = async (cat) => {
-                if (cat === 'الكل') { alert('لا يمكن حذف التصنيف "الكل"'); return; }
+            const deleteCategory = (cat) => {
+                if (cat === 'الكل') {
+                    alert('لا يمكن حذف التصنيف "الكل"');
+                    return;
+                }
                 if (confirm(`هل أنت متأكد من حذف تصنيف "${cat}"؟`)) {
                     setCategories(categories.filter(c => c !== cat));
                     setProducts(products.map(p => p.category === cat ? {...p, category: 'غير مصنف'} : p));
-                    await supabase.from('categories').delete().eq('name', cat);
-                    await supabase.from('products').update({ category: 'غير مصنف' }).eq('category', cat);
                 }
             };
             
-            const checkout = async (e) => {
+            const checkout = (e) => {
                 e.preventDefault();
                 
+                // التحقق من توفر المخزون قبل إتمام الطلب
                 for (let cartItem of cart) {
                     const product = products.find(p => p.id === cartItem.id);
-                    if (!product) { alert(`⚠️ المنتج ${cartItem.name} غير موجود`); return; }
+                    if (!product) {
+                        alert(`⚠️ المنتج ${cartItem.name} غير موجود`);
+                        return;
+                    }
                     if (product.stock < cartItem.qty) {
                         alert(`⚠️ المخزون غير كافٍ للمنتج "${product.name}"\nالمتوفر: ${product.stock}\nالمطلوب: ${cartItem.qty}`);
                         return;
@@ -871,20 +825,32 @@
                 const mainOrderNumber = 'ORD-' + Date.now();
                 const mainTrackingNumber = 'TRK-' + Date.now();
                 
+                // تجميع المنتجات حسب المورد
                 const ordersBySupplier = {};
                 cart.forEach(item => {
                     const product = products.find(p => p.id === item.id);
                     if (product) {
                         const supplierId = product.supplierId;
-                        if (!ordersBySupplier[supplierId]) ordersBySupplier[supplierId] = [];
-                        ordersBySupplier[supplierId].push({
-                            id: item.id, name: item.name, company: item.company,
-                            price: item.price, qty: item.qty || 1, unit: item.unit,
-                            image: item.image, images: item.images
-                        });
+                        if (!ordersBySupplier[supplierId]) {
+                            ordersBySupplier[supplierId] = [];
+                        }
+                        // نسخ جميع بيانات العنصر مع التأكد من وجود الكمية
+                        const orderItem = {
+                            id: item.id,
+                            name: item.name,
+                            company: item.company,
+                            price: item.price,
+                            qty: item.qty || 1,  // التأكد من وجود الكمية
+                            unit: item.unit,
+                            image: item.image,
+                            images: item.images
+                        };
+                        console.log('إضافة عنصر للطلب:', orderItem); // للتتبع
+                        ordersBySupplier[supplierId].push(orderItem);
                     }
                 });
                 
+                // إنشاء طلب منفصل لكل مورد
                 const supplierIds = Object.keys(ordersBySupplier);
                 const deliveryFeePerSupplier = Math.ceil(deliveryFee / supplierIds.length);
                 const newOrders = [];
@@ -895,46 +861,64 @@
                     const orderFee = index === 0 ? deliveryFee - (deliveryFeePerSupplier * (supplierIds.length - 1)) : deliveryFeePerSupplier;
                     
                     const order = {
-                        id: String(Date.now() + index),
+                        id: Date.now() + index,
                         buyerId: currentBuyer ? currentBuyer.id : null,
                         buyerStoreName: currentBuyer ? currentBuyer.storeName : null,
                         orderNumber: supplierIds.length > 1 ? `${mainOrderNumber}-${index + 1}` : mainOrderNumber,
-                        mainOrderNumber,
+                        mainOrderNumber: mainOrderNumber,
                         trackingNumber: supplierIds.length > 1 ? `${mainTrackingNumber}-${index + 1}` : mainTrackingNumber,
-                        supplierId,
+                        supplierId: supplierId,
                         ...buyerData,
-                        items, subtotal, deliveryFee: orderFee, total: subtotal + orderFee,
-                        status: 'pending', deliveryStatus: 'pending',
+                        items: items,
+                        subtotal: subtotal,
+                        deliveryFee: orderFee,
+                        total: subtotal + orderFee,
+                        status: 'pending',
+                        deliveryStatus: 'pending',
                         date: new Date().toISOString(),
-                        trackingHistory: [{ status: 'pending', date: new Date().toISOString(), note: 'تم استلام الطلب' }]
+                        trackingHistory: [
+                            {
+                                status: 'pending',
+                                date: new Date().toISOString(),
+                                note: 'تم استلام الطلب'
+                            }
+                        ]
                     };
                     newOrders.push(order);
                 });
                 
-                // Save orders to Supabase or localStorage
-                await Promise.all(newOrders.map(o => dbUpsert('orders', orderToDb(o))));
-                const allNewOrders = [...orders, ...newOrders];
-                setOrders(allNewOrders);
-                if (!supabase) safeSetJSON('orders', allNewOrders);
+                setOrders([...orders, ...newOrders]);
+                safeSetJSON('orders', [...orders, ...newOrders]);
                 
-                // Deduct stock in Supabase
+                // خصم المنتجات من المخزون
                 const updatedProducts = products.map(product => {
                     const cartItem = cart.find(item => item.id === product.id);
-                    if (cartItem) return { ...product, stock: product.stock - cartItem.qty };
+                    if (cartItem) {
+                        return {
+                            ...product,
+                            stock: product.stock - cartItem.qty
+                        };
+                    }
                     return product;
                 });
-                if (supabase) {
-                    await Promise.all(
-                        cart.map(item => supabase.from('products').update({ stock: updatedProducts.find(p => p.id === item.id)?.stock }).eq('id', String(item.id)))
-                    );
-                } else {
-                    safeSetJSON('products', updatedProducts);
-                }
                 setProducts(updatedProducts);
+                safeSetJSON('products', updatedProducts);
                 
                 setCart([]);
-                setBuyerData({ storeName: '', ownerName: '', phone: '', address: '', notes: '', deliveryMethod: 'standard', latitude: null, longitude: null, locationAccuracy: null });
+                setBuyerData({ 
+                    storeName: '', 
+                    ownerName: '', 
+                    phone: '', 
+                    address: '', 
+                    notes: '', 
+                    deliveryMethod: 'standard',
+                    latitude: null,
+                    longitude: null,
+                    locationAccuracy: null
+                });
                 setShowCheckout(false);
+                
+                // عرض نافذة التأكيد بدلاً من alert
                 setConfirmedOrders(newOrders);
                 setShowOrderConfirmation(true);
             };
@@ -991,91 +975,88 @@
                 );
             };
             
-            const updateDeliveryStatus = async (orderId, newStatus, note) => {
+            const updateDeliveryStatus = (orderId, newStatus, note) => {
+                // إرجاع المخزون إذا تم إلغاء الطلب
                 if (newStatus === 'cancelled') {
                     const order = orders.find(o => o.id === orderId) || archivedOrders.find(o => o.id === orderId);
                     if (order && order.deliveryStatus !== 'cancelled') {
+                        // إرجاع المنتجات للمخزون
                         const updatedProducts = products.map(product => {
                             const orderItem = order.items.find(item => item.id === product.id);
-                            if (orderItem) return { ...product, stock: product.stock + orderItem.qty };
+                            if (orderItem) {
+                                return {
+                                    ...product,
+                                    stock: product.stock + orderItem.qty
+                                };
+                            }
                             return product;
                         });
                         setProducts(updatedProducts);
-                        await Promise.all(order.items.map(item => {
-                            const prod = updatedProducts.find(p => p.id === item.id);
-                            if (prod) return supabase.from('products').update({ stock: prod.stock }).eq('id', String(item.id));
-                        }));
+                        safeSetJSON('products', updatedProducts);
                     }
                 }
                 
-                const applyUpdate = (list) => list.map(o => {
+                setOrders(orders.map(o => {
                     if (o.id === orderId) {
                         const updatedHistory = [...(o.trackingHistory || []), {
-                            status: newStatus, date: new Date().toISOString(), note: note || getStatusNote(newStatus)
+                            status: newStatus,
+                            date: new Date().toISOString(),
+                            note: note || getStatusNote(newStatus)
                         }];
                         return {...o, deliveryStatus: newStatus, trackingHistory: updatedHistory};
                     }
                     return o;
-                });
-                setOrders(applyUpdate(orders));
-                setArchivedOrders(applyUpdate(archivedOrders));
-                const updated = applyUpdate([...orders, ...archivedOrders]).find(o => o.id === orderId);
-                if (updated) await dbUpdate('orders', orderId, { delivery_status: newStatus, tracking_history: updated.trackingHistory });
+                }));
+                setArchivedOrders(archivedOrders.map(o => {
+                    if (o.id === orderId) {
+                        const updatedHistory = [...(o.trackingHistory || []), {
+                            status: newStatus,
+                            date: new Date().toISOString(),
+                            note: note || getStatusNote(newStatus)
+                        }];
+                        return {...o, deliveryStatus: newStatus, trackingHistory: updatedHistory};
+                    }
+                    return o;
+                }));
                 
-                alert(newStatus === 'cancelled' 
+                const statusMessage = newStatus === 'cancelled' 
                     ? '✅ تم إلغاء الطلب وإرجاع المنتجات للمخزون'
-                    : '✅ تم تحديث حالة التوصيل إلى:\n' + getStatusNote(newStatus));
+                    : '✅ تم تحديث حالة التوصيل إلى:\n' + getStatusNote(newStatus) + '\n\nسيظهر التحديث مباشرة للمتجر في شاشة التتبع!';
+                    
+                alert(statusMessage);
             };
             
             const getStatusNote = (status) => {
                 const notes = {
-                    'pending': 'قيد الانتظار', 'processing': 'جاري تجهيز الطلب',
-                    'ready': 'الطلب جاهز للشحن', 'shipped': 'تم شحن الطلب',
-                    'out_for_delivery': 'الطلب في طريقه للتسليم', 'delivered': 'تم تسليم الطلب',
-                    'cancelled': 'تم إلغاء الطلب', 'failed': 'فشل التوصيل', 'returned': 'تم إرجاع الطلب'
+                    'pending': 'قيد الانتظار',
+                    'processing': 'جاري تجهيز الطلب',
+                    'ready': 'الطلب جاهز للشحن',
+                    'shipped': 'تم شحن الطلب',
+                    'out_for_delivery': 'الطلب في طريقه للتسليم',
+                    'delivered': 'تم تسليم الطلب',
+                    'cancelled': 'تم إلغاء الطلب',
+                    'failed': 'فشل التوصيل',
+                    'returned': 'تم إرجاع الطلب'
                 };
                 return notes[status] || status;
             };
             
-            const assignDriver = async (orderId, driverId) => {
+            const assignDriver = (orderId, driverId) => {
                 const driver = deliveryDrivers.find(d => d.id === driverId);
                 if (driver) {
-                    const updatedOrders = orders.map(o => {
+                    setOrders(orders.map(o => {
                         if (o.id === orderId) {
                             const updatedHistory = [...(o.trackingHistory || []), {
-                                status: 'assigned', date: new Date().toISOString(), note: `تم تعيين السائق: ${driver.name}`
+                                status: 'assigned',
+                                date: new Date().toISOString(),
+                                note: `تم تعيين السائق: ${driver.name}`
                             }];
-                            return {...o, driverId, driverName: driver.name, trackingHistory: updatedHistory};
+                            return {...o, driverId: driverId, driverName: driver.name, trackingHistory: updatedHistory};
                         }
                         return o;
-                    });
-                    setOrders(updatedOrders);
-                    await dbUpdate('orders', orderId, { driver_id: String(driverId), driver_name: driver.name, tracking_history: updatedOrders.find(o=>o.id===orderId)?.trackingHistory });
+                    }));
                     alert('تم تعيين السائق: ' + driver.name);
                 }
-            };
-            
-            const updateOrderStatus = async (orderId, status) => {
-                setOrders(orders.map(o => o.id === orderId ? {...o, status} : o));
-                await dbUpdate('orders', orderId, { status });
-                alert('تم تحديث حالة الطلب');
-            };
-            
-            const addDeliveryDriver = async () => {
-                const name = prompt('اسم السائق:');
-                if (!name || !name.trim()) return;
-                const phone = prompt('رقم الهاتف:');
-                if (!phone || !phone.trim()) return;
-                const vehicle = prompt('نوع المركبة:');
-                if (!vehicle || !vehicle.trim()) return;
-                
-                const newDriver = {
-                    id: String(Date.now()), name: name.trim(), phone: phone.trim(),
-                    vehicle: vehicle.trim(), status: 'active', createdAt: new Date().toISOString()
-                };
-                setDeliveryDrivers([...deliveryDrivers, newDriver]);
-                await dbUpsert('delivery_drivers', driverToDb(newDriver));
-                alert('تم إضافة السائق: ' + name);
             };
             
             const trackOrder = () => {
@@ -1106,40 +1087,64 @@
                 }
             };
             
+            const addDeliveryDriver = () => {
+                const name = prompt('اسم السائق:');
+                if (!name || !name.trim()) return;
+                
+                const phone = prompt('رقم الهاتف:');
+                if (!phone || !phone.trim()) return;
+                
+                const vehicle = prompt('نوع المركبة:');
+                if (!vehicle || !vehicle.trim()) return;
+                
+                const newDriver = {
+                    id: Date.now(),
+                    name: name.trim(),
+                    phone: phone.trim(),
+                    vehicle: vehicle.trim(),
+                    status: 'active',
+                    createdAt: new Date().toISOString()
+                };
+                
+                setDeliveryDrivers([...deliveryDrivers, newDriver]);
+                alert('تم إضافة السائق: ' + name);
+            };
+            
+            const updateOrderStatus = (orderId, status) => {
+                setOrders(orders.map(o => o.id === orderId ? {...o, status} : o));
+                alert('تم تحديث حالة الطلب');
+            };
+            
             const myOrders = currentSupplier ? orders.filter(o => o.supplierId === currentSupplier.id) : [];
             
             const myArchivedOrders = currentSupplier ? archivedOrders.filter(o => o.supplierId === currentSupplier.id) : [];
             
-            const archiveOrder = async (orderId) => {
+            const archiveOrder = (orderId) => {
                 if (confirm('هل تريد نقل هذا الطلب إلى الأرشيف؟')) {
                     const order = orders.find(o => o.id === orderId);
                     if (order) {
-                        const archived = {...order, isArchived: true, archivedAt: new Date().toISOString()};
-                        setArchivedOrders([...archivedOrders, archived]);
+                        setArchivedOrders([...archivedOrders, {...order, archivedAt: new Date().toISOString()}]);
                         setOrders(orders.filter(o => o.id !== orderId));
-                        await dbUpdate('orders', orderId, { is_archived: true, archived_at: archived.archivedAt });
                         alert('تم نقل الطلب إلى الأرشيف!');
                     }
                 }
             };
             
-            const unarchiveOrder = async (orderId) => {
+            const unarchiveOrder = (orderId) => {
                 if (confirm('هل تريد استعادة هذا الطلب من الأرشيف؟')) {
                     const order = archivedOrders.find(o => o.id === orderId);
                     if (order) {
-                        const {isArchived, archivedAt, ...restored} = order;
-                        setOrders([...orders, restored]);
+                        const {archivedAt, ...orderWithoutArchiveDate} = order;
+                        setOrders([...orders, orderWithoutArchiveDate]);
                         setArchivedOrders(archivedOrders.filter(o => o.id !== orderId));
-                        await dbUpdate('orders', orderId, { is_archived: false, archived_at: null });
                         alert('تم استعادة الطلب!');
                     }
                 }
             };
             
-            const deleteArchivedOrder = async (orderId) => {
+            const deleteArchivedOrder = (orderId) => {
                 if (confirm('هل تريد حذف هذا الطلب نهائياً من الأرشيف؟ لا يمكن التراجع عن هذا الإجراء.')) {
                     setArchivedOrders(archivedOrders.filter(o => o.id !== orderId));
-                    await dbDelete('orders', orderId);
                     alert('تم حذف الطلب نهائياً!');
                 }
             };
@@ -1155,42 +1160,43 @@
                 };
             };
             
-            const approveSupplier = async (id) => {
+            const approveSupplier = (id) => {
                 const updated = suppliers.map(s => s.id === id ? {...s, status: 'active'} : s);
+                safeSetJSON('suppliers', updated);
                 setSuppliers(updated);
-                await dbUpdate('suppliers', id, { status: 'active' });
                 alert('تم تفعيل المورد!');
             };
             
-            const rejectSupplier = async (id) => {
+            const rejectSupplier = (id) => {
                 if (confirm('هل أنت متأكد من رفض هذا الطلب؟')) {
-                    setSuppliers(suppliers.filter(s => s.id !== id));
-                    await dbDelete('suppliers', id);
+                    const updated = suppliers.filter(s => s.id !== id);
+                    safeSetJSON('suppliers', updated);
+                    setSuppliers(updated);
                     alert('تم رفض الطلب');
                 }
             };
             
-            const toggleSupplierStatus = async (id, currentStatus) => {
+            const toggleSupplierStatus = (id, currentStatus) => {
                 const newStatus = currentStatus === 'active' ? 'inactive' : 'active';
                 const updated = suppliers.map(s => s.id === id ? {...s, status: newStatus} : s);
+                safeSetJSON('suppliers', updated);
                 setSuppliers(updated);
-                await dbUpdate('suppliers', id, { status: newStatus });
                 alert(newStatus === 'active' ? 'تم تفعيل المورد' : 'تم تعطيل المورد');
             };
             
-            const deleteSupplier = async (id) => {
+            const deleteSupplier = (id) => {
                 if (confirm('حذف المورد؟ سيتم حذف جميع منتجاته أيضاً.')) {
-                    setSuppliers(suppliers.filter(s => s.id !== id));
+                    const updatedSuppliers = suppliers.filter(s => s.id !== id);
+                    safeSetJSON('suppliers', updatedSuppliers);
+                    setSuppliers(updatedSuppliers);
                     setProducts(products.filter(p => p.supplierId !== id));
-                    await dbDelete('suppliers', id);   // CASCADE deletes their products too
                     alert('تم الحذف');
                 }
             };
             
-            const deleteProductAdmin = async (id) => {
+            const deleteProductAdmin = (id) => {
                 if (confirm('حذف هذا المنتج؟')) {
                     setProducts(products.filter(p => p.id !== id));
-                    await dbDelete('products', String(id));
                     alert('تم حذف المنتج');
                 }
             };
@@ -1327,47 +1333,44 @@
             };
 
             // حذف متجر واحد (Admin)
-            const deleteBuyer = async (buyerId) => {
+            const deleteBuyer = (buyerId) => {
                 const updated = buyers.filter(b => b.id !== buyerId);
                 setBuyers(updated);
+                safeSetJSON('buyers', updated);
+                // حذف سلة المتجر
+                safeStorage('remove', 'cart_' + buyerId);
                 setSelectedBuyersAdmin(prev => { const n = new Set(prev); n.delete(buyerId); return n; });
-                await dbDelete('buyers', buyerId);   // CASCADE deletes their cart too
             };
 
             // حذف المتاجر المحددة (Admin)
-            const deleteSelectedBuyers = async () => {
+            const deleteSelectedBuyers = () => {
                 if (selectedBuyersAdmin.size === 0) return;
                 if (!confirm(`⚠️ هل تريد حذف ${selectedBuyersAdmin.size} متجر؟\nسيتم حذف بيانات تسجيل الدخول الخاصة بهم.\nلن تتأثر الطلبات.`)) return;
                 const ids = selectedBuyersAdmin;
                 const updated = buyers.filter(b => !ids.has(b.id));
                 setBuyers(updated);
-                await Promise.all([...ids].map(id => dbDelete('buyers', id)));
+                safeSetJSON('buyers', updated);
+                ids.forEach(id => safeStorage('remove', 'cart_' + id));
                 setSelectedBuyersAdmin(new Set());
                 alert('✅ تم حذف المتاجر المحددة');
             };
 
             // حذف جميع المتاجر (Admin)
-            const deleteAllBuyers = async () => {
+            const deleteAllBuyers = () => {
                 if (!confirm(`⚠️ هل تريد حذف جميع المتاجر (${buyers.length} متجر)؟\nسيتم حذف جميع حسابات المشترين.\nلن تتأثر الطلبات.`)) return;
                 const confirmation = prompt('اكتب "مسح" للتأكيد:');
                 if (confirmation !== 'مسح') { alert('❌ تم الإلغاء'); return; }
-                await Promise.all(buyers.map(b => dbDelete('buyers', b.id)));
+                buyers.forEach(b => safeStorage('remove', 'cart_' + b.id));
                 setBuyers([]);
+                safeSetJSON('buyers', []);
                 setSelectedBuyersAdmin(new Set());
                 alert('✅ تم حذف جميع المتاجر');
             };
 
-            // حفظ قائمة الطلبات المخفية في Supabase أو localStorage
-            const saveHiddenOrders = async (hiddenSet) => {
-                if (!currentBuyer) return;
-                if (supabase) {
-                    await supabase.from('buyer_hidden_orders').delete().eq('buyer_id', currentBuyer.id);
-                    if (hiddenSet.size > 0) {
-                        await supabase.from('buyer_hidden_orders').insert(
-                            [...hiddenSet].map(order_id => ({ buyer_id: currentBuyer.id, order_id }))
-                        );
-                    }
-                } else {
+            // حذف طلب واحد للمشتري
+            // حفظ قائمة الطلبات المخفية في localStorage
+            const saveHiddenOrders = (hiddenSet) => {
+                if (currentBuyer) {
                     safeSetJSON('hidden_orders_' + currentBuyer.id, Array.from(hiddenSet));
                 }
             };
@@ -1410,40 +1413,6 @@
 
             return (
                 <div>
-                    {/* Loading overlay */}
-                    {appLoading && (
-                        <div style={{
-                            position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-                            background: 'rgba(255,255,255,0.97)', display: 'flex',
-                            flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-                            zIndex: 9999, gap: '1rem'
-                        }}>
-                            <div style={{fontSize: '3.5rem', animation: 'pulse 1.5s infinite'}}>🌿</div>
-                            <h2 style={{color: '#2c5f2d'}}>جاري تحميل البيانات...</h2>
-                            <p style={{color: '#666'}}>{SUPABASE_CONFIGURED ? 'يتم الاتصال ب Supabase' : 'التحميل من الذاكرة المحلية...'}</p>
-                        </div>
-                    )}
-
-                    {/* Supabase setup banner */}
-                    {!SUPABASE_CONFIGURED && !appLoading && (
-                        <div style={{
-                            background: 'linear-gradient(135deg, #1a237e, #3f51b5)',
-                            color: 'white', padding: '0.8rem 1.5rem',
-                            display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            gap: '1rem', flexWrap: 'wrap', fontSize: '0.9rem', textAlign: 'center'
-                        }}>
-                            <span>⚠️ التطبيق يعمل حالياً بالذاكرة المحلية</span>
-                            <span style={{opacity: 0.8}}>│</span>
-                            <span>🔗 لربط Supabase: افتح الملف وأدخل <strong>SUPABASE_URL</strong> و <strong>SUPABASE_KEY</strong></span>
-                            <a href="https://app.supabase.com" target="_blank" style={{
-                                background: 'white', color: '#1a237e',
-                                padding: '0.4rem 1rem', borderRadius: '6px',
-                                fontWeight: 'bold', textDecoration: 'none', fontSize: '0.85rem'
-                            }}>
-                                🚀 افتح Supabase
-                            </a>
-                        </div>
-                    )}
                     <header className={`header ${admin ? 'admin' : currentBuyer ? 'buyer' : ''}`}>
                         <div className="header-content">
                             <div className="logo">🛒 منصة Bazaar للمواد الغذائية</div>
@@ -2992,12 +2961,13 @@
                                                 </p>
                                                 <button 
                                                     className="btn btn-danger"
-                                                    onClick={async () => {
+                                                    onClick={() => {
                                                         if (confirm('⚠️ هل أنت متأكد من حذف جميع الموردين؟\n\nهذا الإجراء لا يمكن التراجع عنه!')) {
                                                             if (confirm('⚠️⚠️ تأكيد نهائي: سيتم حذف جميع حسابات الموردين!\n\nاكتب "نعم" للمتابعة')) {
+                                                                safeStorage('remove', 'suppliers');
                                                                 setSuppliers([]);
-                                                                await supabase.from('suppliers').delete().neq('id', '');
                                                                 alert('✅ تم حذف جميع الموردين بنجاح');
+                                                                // Removed reload to stay in admin panel
                                                             }
                                                         }
                                                     }}
@@ -3013,11 +2983,10 @@
                                                 </p>
                                                 <button 
                                                     className="btn btn-danger"
-                                                    onClick={async () => {
+                                                    onClick={() => {
                                                         if (confirm('⚠️ هل أنت متأكد من حذف جميع المنتجات؟\n\nهذا الإجراء لا يمكن التراجع عنه!')) {
                                                             if (confirm('⚠️⚠️ تأكيد نهائي: سيتم حذف ' + products.length + ' منتج!\n\nاكتب "نعم" للمتابعة')) {
                                                                 setProducts([]);
-                                                                await supabase.from('products').delete().neq('id', '');
                                                                 alert('✅ تم حذف جميع المنتجات بنجاح');
                                                             }
                                                         }
@@ -3034,12 +3003,11 @@
                                                 </p>
                                                 <button 
                                                     className="btn btn-danger"
-                                                    onClick={async () => {
+                                                    onClick={() => {
                                                         if (confirm('⚠️ هل أنت متأكد من حذف جميع الطلبات؟\n\nهذا الإجراء لا يمكن التراجع عنه!')) {
                                                             if (confirm('⚠️⚠️ تأكيد نهائي: سيتم حذف ' + (orders.length + archivedOrders.length) + ' طلب!\n\nاكتب "نعم" للمتابعة')) {
                                                                 setOrders([]);
                                                                 setArchivedOrders([]);
-                                                                await supabase.from('orders').delete().neq('id', '');
                                                                 alert('✅ تم حذف جميع الطلبات بنجاح');
                                                             }
                                                         }
@@ -3056,10 +3024,9 @@
                                                 </p>
                                                 <button 
                                                     className="btn btn-danger"
-                                                    onClick={async () => {
+                                                    onClick={() => {
                                                         if (confirm('⚠️ هل أنت متأكد من حذف جميع السائقين؟')) {
                                                             setDeliveryDrivers([]);
-                                                            await supabase.from('delivery_drivers').delete().neq('id', '');
                                                             alert('✅ تم حذف جميع السائقين بنجاح');
                                                         }
                                                     }}
@@ -3078,21 +3045,20 @@
                                                 <button 
                                                     className="btn btn-danger"
                                                     style={{background: '#b71c1c', fontSize: '1.1rem', padding: '1rem 2rem'}}
-                                                    onClick={async () => {
+                                                    onClick={() => {
                                                         if (confirm('💣💣💣 تحذير شديد!\n\nهل أنت متأكد 100% من إعادة تعيين النظام بالكامل؟\n\nسيتم حذف:\n- جميع الموردين\n- جميع المنتجات\n- جميع الطلبات\n- جميع السائقين\n- جميع التصنيفات\n\nهذا الإجراء لا يمكن التراجع عنه أبداً!')) {
                                                             const confirmation = prompt('⚠️ للمتابعة، اكتب كلمة "مسح" بالعربي:');
                                                             if (confirmation === 'مسح') {
-                                                                await Promise.all([
-                                                                    supabase.from('orders').delete().neq('id', ''),
-                                                                    supabase.from('products').delete().neq('id', ''),
-                                                                    supabase.from('suppliers').delete().neq('id', ''),
-                                                                    supabase.from('delivery_drivers').delete().neq('id', ''),
-                                                                    supabase.from('buyers').delete().neq('id', ''),
-                                                                ]);
-                                                                setSuppliers([]); setProducts([]); setOrders([]);
-                                                                setArchivedOrders([]); setDeliveryDrivers([]);
+                                                                // حذف جميع البيانات
+                                                                safeStorage('clear');
+                                                                alert('✅ تم إعادة تعيين النظام بالكامل!\n\nسيتم إعادة تحميل الصفحة...');
+                                                                setSuppliers([]);
+                                                                setProducts([]);
+                                                                setOrders([]);
+                                                                setArchivedOrders([]);
+                                                                setDeliveryDrivers([]);
                                                                 setCategories(["الكل", "حبوب", "بقالة", "زيوت", "ألبان", "مشروبات", "معلبات", "حلويات", "تنظيف"]);
-                                                                alert('✅ تم إعادة تعيين النظام بالكامل!');
+                                                                // Removed reload to stay in admin panel
                                                             } else {
                                                                 alert('❌ تم إلغاء العملية - الكلمة غير صحيحة');
                                                             }
