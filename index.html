@@ -162,8 +162,6 @@ body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background:
 </head>
 <body>
 <div id="root"></div>
-<script type="text/babel">
-const { useState, useEffect } = React;
 
 <!-- ✅ تهيئة Supabase - تم إعدادها ببياناتك -->
 <script>
@@ -180,60 +178,13 @@ const { useState, useEffect } = React;
 </script> 
 
 
-function ImageSlider({ images, defaultImage }) {
-  const [current, setCurrent] = useState(0);
-  if (!images || images.length === 0) {
-    return <div style={{fontSize: '4rem'}}>{defaultImage || '📦'}</div>;
-  }
-  if (images.length === 1) {
-    const img = images[0];
-    return img && img.startsWith('data:image') ?
-      <img src={img} alt="منتج" style={{width: '100%', height: '100%', objectFit: 'cover', borderRadius: '8px'}} /> :
-      <div style={{fontSize: '4rem'}}>{img || defaultImage || '📦'}</div>;
-  }
-  return (
-    <div style={{position: 'relative', width: '100%', height: '100%'}}>
-      {images.map((img, i) => (
-        <div key={i} style={{
-          position: 'absolute', top: 0, left: 0, width: '100%', height: '100%',
-          opacity: i === current ? 1 : 0, transition: 'opacity 0.3s',
-          display: 'flex', alignItems: 'center', justifyContent: 'center'
-        }}>
-          {img && img.startsWith('data:image') ?
-            <img src={img} alt={`صورة ${i+1}`} style={{width: '100%', height: '100%', objectFit: 'cover', borderRadius: '8px'}} /> :
-            <span style={{fontSize: '4rem'}}>{img}</span>
-          }
+<script type="text/babel">
+    const { useState, useEffect } = React;
+    
+…          {/* أزرار التنقل ... */}
         </div>
-      ))}
-      <button onClick={() => setCurrent((current - 1 + images.length) % images.length)} style={{
-        position: 'absolute', top: '50%', right: '5px', transform: 'translateY(-50%)',
-        background: 'rgba(0,0,0,0.5)', color: 'white', border: 'none',
-        width: '30px', height: '30px', borderRadius: '50%', cursor: 'pointer',
-        fontSize: '1.2rem', zIndex: 2
-      }}>‹</button>
-      <button onClick={() => setCurrent((current + 1) % images.length)} style={{
-        position: 'absolute', top: '50%', left: '5px', transform: 'translateY(-50%)',
-        background: 'rgba(0,0,0,0.5)', color: 'white', border: 'none',
-        width: '30px', height: '30px', borderRadius: '50%', cursor: 'pointer',
-        fontSize: '1.2rem', zIndex: 2
-      }}>›</button>
-      <div style={{
-        position: 'absolute', bottom: '10px', left: '50%', transform: 'translateX(-50%)',
-        display: 'flex', gap: '0.3rem', background: 'rgba(0,0,0,0.5)',
-        padding: '0.3rem 0.5rem', borderRadius: '10px', zIndex: 2
-      }}>
-        {images.map((_, i) => (
-          <button key={i} onClick={() => setCurrent(i)} style={{
-            width: '8px', height: '8px', borderRadius: '50%',
-            background: i === current ? 'white' : 'rgba(255,255,255,0.5)',
-            border: 'none', cursor: 'pointer', padding: 0
-          }} />
-        ))}
-      </div>
-    </div>
-  );
-}
-
+      );
+    }
 function ExpiryBadge({ expiryDate }) {
   if (!expiryDate) return null;
   const today = new Date();
