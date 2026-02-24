@@ -163,28 +163,110 @@ body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background:
 <body>
 <div id="root"></div>
 
-<!-- ✅ تهيئة Supabase - تم إعدادها ببياناتك -->
+<!-- ✅ تهيئة Supabase - سكربت عادي (JavaScript فقط) -->
 <script>
   const SUPABASE_URL = 'https://frolmfzkljlvqstvbrmt.supabase.co';
   const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZyb2xtZnprbGpsdnFzdHZicm10Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzEyMzE3NTUsImV4cCI6MjA4NjgwNzc1NX0.z1NMSzEvq0rCbiEXL1VLYhnf-4mSfoWtYaaov-1EGv4';
   
- // ✅ إنشاء العميل وتخزينه في window
+  // ✅ إنشاء العميل وتخزينه في window
   window.supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
   
-…  };
-  
-  console.log('✅ Supabase Connected & Global Variables Set');
-}
-</script> 
-
-
-<script type="text/babel">
-    const { useState, useEffect } = React;
-    
-…          {/* أزرار التنقل ... */}
-        </div>
-      );
+  // ✅ كائن db للوصول السهل
+  window.db = {
+    getAll: async (table) => {
+      try {
+        const { data, error } = await window.supabaseClient.from(table).select('*');
+        if (error) { console.error(`Error fetching ${table}:`, error); return []; }
+        return data || [];
+      } catch (e) { console.error('DB Error:', e); return []; }
+    },
+    insert: async (table, record) => {
+      try {
+        const { data, error } = await window.supabaseClient.from(table).insert([record]).select();
+        if (error) { console.error(`Error inserting to ${table}:`, error); return null; }
+        return data?.[0];
+      } catch (e) { console.error('DB Error:', e); return null; }
+    },
+    update: async (table, id, updates) => {
+      try {
+        const { data, error } = await window.supabaseClient.from(table).update(updates).eq('id', id).select();
+        if (error) { console.error(`Error updating ${table}:`, error); return null; }
+        return data?.[0];
+      } catch (e) { console.error('DB Error:', e); return null; }
+    },
+    delete: async (table, id) => {
+      try {
+        const { error } = await window.supabaseClient.from(table).delete().eq('id', id);
+        if (error) { console.error(`Error deleting from ${table}:`, error); return false; }
+        return true;
+      } catch (e) { console.error('DB Error:', e); return false; }
     }
+  };
+  console.log('✅ Supabase Connected & Global Variables Set');
+</script>
+
+<!-- ✅ كود React/Babel - JavaScript/JSX فقط (بدون HTML comments أو tags) -->
+<script type="text/babel">
+const { useState, useEffect } = React;
+
+// ✅ الوصول للمتغيرات العالمية من window
+const supabase = window.supabaseClient;
+const db = window.db;
+
+function ImageSlider({ images, defaultImage }) {
+  const [current, setCurrent] = useState(0);
+  if (!images || images.length === 0) {
+    return <div style={{fontSize: '4rem'}}>{defaultImage || '📦'}</div>;
+  }
+  if (images.length === 1) {
+    const img = images[0];
+    return img && img.startsWith('data:image') ?
+      <img src={img} alt="منتج" style={{width: '100%', height: '100%', objectFit: 'cover', borderRadius: '8px'}} /> :
+      <div style={{fontSize: '4rem'}}>{img || defaultImage || '📦'}</div>;
+  }
+  return (
+    <div style={{position: 'relative', width: '100%', height: '100%'}}>
+      {images.map((img, i) => (
+        <div key={i} style={{
+          position: 'absolute', top: 0, left: 0, width: '100%', height: '100%',
+          opacity: i === current ? 1 : 0, transition: 'opacity 0.3s',
+          display: 'flex', alignItems: 'center', justifyContent: 'center'
+        }}>
+          {img && img.startsWith('data:image') ?
+            <img src={img} alt={`صورة ${i+1}`} style={{width: '100%', height: '100%', objectFit: 'cover', borderRadius: '8px'}} /> :
+            <span style={{fontSize: '4rem'}}>{img}</span>
+          }
+        </div>
+      ))}
+      <button onClick={() => setCurrent((current - 1 + images.length) % images.length)} style={{
+        position: 'absolute', top: '50%', right: '5px', transform: 'translateY(-50%)',
+        background: 'rgba(0,0,0,0.5)', color: 'white', border: 'none',
+        width: '30px', height: '30px', borderRadius: '50%', cursor: 'pointer',
+        fontSize: '1.2rem', zIndex: 2
+      }}>‹</button>
+      <button onClick={() => setCurrent((current + 1) % images.length)} style={{
+        position: 'absolute', top: '50%', left: '5px', transform: 'translateY(-50%)',
+        background: 'rgba(0,0,0,0.5)', color: 'white', border: 'none',
+        width: '30px', height: '30px', borderRadius: '50%', cursor: 'pointer',
+        fontSize: '1.2rem', zIndex: 2
+      }}>›</button>
+      <div style={{
+        position: 'absolute', bottom: '10px', left: '50%', transform: 'translateX(-50%)',
+        display: 'flex', gap: '0.3rem', background: 'rgba(0,0,0,0.5)',
+        padding: '0.3rem 0.5rem', borderRadius: '10px', zIndex: 2
+      }}>
+        {images.map((_, i) => (
+          <button key={i} onClick={() => setCurrent(i)} style={{
+            width: '8px', height: '8px', borderRadius: '50%',
+            background: i === current ? 'white' : 'rgba(255,255,255,0.5)',
+            border: 'none', cursor: 'pointer', padding: 0
+          }} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function ExpiryBadge({ expiryDate }) {
   if (!expiryDate) return null;
   const today = new Date();
@@ -209,9 +291,6 @@ function ExpiryBadge({ expiryDate }) {
 }
 
 function App() {
-  // ✅ الوصول للمتغيرات العالمية داخل React/Babel scope
-  const supabase = window.supabaseClient;
-  const db = window.db;
   const [currentTab, setCurrentTab] = useState('shop');
   const [adminTab, setAdminTab] = useState('suppliers');
   
@@ -225,13 +304,10 @@ function App() {
   const [deliveryDrivers, setDeliveryDrivers] = useState([]);
   const [admins, setAdmins] = useState([]);
   const [commissionPayments, setCommissionPayments] = useState([]);
-  
   const [isLoading, setIsLoading] = useState(true);
-  
   const [currentBuyer, setCurrentBuyer] = useState(null);
   const [currentSupplier, setCurrentSupplier] = useState(null);
   const [currentAdmin, setCurrentAdmin] = useState(null);
-  
   const [showBuyerAuth, setShowBuyerAuth] = useState(false);
   const [buyerAuthMode, setBuyerAuthMode] = useState('login');
   const [buyerAuthData, setBuyerAuthData] = useState({ username: '', password: '', storeName: '', ownerName: '', phone: '' });
@@ -331,8 +407,9 @@ function App() {
           name: 'المدير الرئيسي', role: 'super_admin', createdAt: new Date().toISOString()
         }]);
         setCommissionPayments(pays || []);
+        console.log('✅ Data loaded successfully');
       } catch (error) {
-        console.error('فشل تحميل البيانات:', error);
+        console.error('❌ فشل تحميل البيانات:', error);
       } finally {
         setIsLoading(false);
       }
@@ -350,6 +427,7 @@ function App() {
     const supplier = suppliers.find(s => s.id === p.supplierId);
     return supplier?.companyName || 'مورد غير معروف';
   }))];
+  
   const uniqueCompanies = [...new Set(products.map(p => p.company))];
   
   const filteredProducts = products.filter(p => {
@@ -808,17 +886,17 @@ function App() {
   const printInvoice = (order) => {
     const printWindow = window.open('', '', 'width=800,height=600');
     printWindow.document.write(`
-<html dir="rtl"><head><title>فاتورة ${order.order_number}</title>
-<style>body{font-family:Arial;padding:2rem}h1{text-align:center;color:#2c5f2d}table{width:100%;border-collapse:collapse;margin-top:2rem}th,td{border:1px solid #ddd;padding:0.8rem;text-align:right}th{background:#2c5f2d;color:white}.total{font-size:1.5rem;font-weight:bold;margin-top:2rem;text-align:left}</style>
-</head><body>
-<h1>فاتورة طلب ${order.order_number}</h1>
-<p><strong>المتجر:</strong> ${order.store_name}</p><p><strong>المسؤول:</strong> ${order.owner_name}</p>
-<p><strong>الهاتف:</strong> ${order.phone}</p><p><strong>العنوان:</strong> ${order.address}</p>
-<p><strong>التاريخ:</strong> ${new Date(order.date).toLocaleString('ar-IQ')}</p>
-<table><tr><th>المنتج</th><th>السعر</th><th>الكمية</th><th>المجموع</th></tr>
-${order.items.map(item => `<tr><td>${item.name}</td><td>${item.price.toLocaleString()} د.ع</td><td>${item.qty}</td><td>${(item.price * item.qty).toLocaleString()} د.ع</td></tr>`).join('')}
-</table><p class="total">المجموع الكلي: ${order.total.toLocaleString()} د.ع</p>
-</body></html>`);
+      <html dir="rtl"><head><title>فاتورة ${order.order_number}</title>
+      <style>body{font-family:Arial;padding:2rem}h1{text-align:center;color:#2c5f2d}table{width:100%;border-collapse:collapse;margin-top:2rem}th,td{border:1px solid #ddd;padding:0.8rem;text-align:right}th{background:#2c5f2d;color:white}.total{font-size:1.5rem;font-weight:bold;margin-top:2rem;text-align:left}</style>
+      </head><body>
+      <h1>فاتورة طلب ${order.order_number}</h1>
+      <p><strong>المتجر:</strong> ${order.store_name}</p><p><strong>المسؤول:</strong> ${order.owner_name}</p>
+      <p><strong>الهاتف:</strong> ${order.phone}</p><p><strong>العنوان:</strong> ${order.address}</p>
+      <p><strong>التاريخ:</strong> ${new Date(order.date).toLocaleString('ar-IQ')}</p>
+      <table><tr><th>المنتج</th><th>السعر</th><th>الكمية</th><th>المجموع</th></tr>
+      ${order.items.map(item => `<tr><td>${item.name}</td><td>${item.price.toLocaleString()} د.ع</td><td>${item.qty}</td><td>${(item.price * item.qty).toLocaleString()} د.ع</td></tr>`).join('')}
+      </table><p class="total">المجموع الكلي: ${order.total.toLocaleString()} د.ع</p>
+      </body></html>`);
     printWindow.document.close(); printWindow.print();
   };
 
@@ -1034,7 +1112,6 @@ ${order.items.map(item => `<tr><td>${item.name}</td><td>${item.price.toLocaleStr
           </ul>
         </div>
       </div>
-      {/* باقي واجهة المستخدم - نفس الكود الأصلي */}
     </div>
   );
 }
