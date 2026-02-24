@@ -168,40 +168,14 @@ body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background:
   const SUPABASE_URL = 'https://frolmfzkljlvqstvbrmt.supabase.co';
   const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZyb2xtZnprbGpsdnFzdHZicm10Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzEyMzE3NTUsImV4cCI6MjA4NjgwNzc1NX0.z1NMSzEvq0rCbiEXL1VLYhnf-4mSfoWtYaaov-1EGv4';
   
-  const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+ // ✅ إنشاء العميل وتخزينه في window
+  window.supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
   
-  const db = {
-    getAll: async (table) => {
-      try {
-        const { data, error } = await supabase.from(table).select('*');
-        if (error) { console.error(`Error fetching ${table}:`, error); return []; }
-        return data || [];
-      } catch (e) { console.error('DB Error:', e); return []; }
-    },
-    insert: async (table, record) => {
-      try {
-        const { data, error } = await supabase.from(table).insert([record]).select();
-        if (error) { console.error(`Error inserting to ${table}:`, error); return null; }
-        return data?.[0];
-      } catch (e) { console.error('DB Error:', e); return null; }
-    },
-    update: async (table, id, updates) => {
-      try {
-        const { data, error } = await supabase.from(table).update(updates).eq('id', id).select();
-        if (error) { console.error(`Error updating ${table}:`, error); return null; }
-        return data?.[0];
-      } catch (e) { console.error('DB Error:', e); return null; }
-    },
-    delete: async (table, id) => {
-      try {
-        const { error } = await supabase.from(table).delete().eq('id', id);
-        if (error) { console.error(`Error deleting from ${table}:`, error); return false; }
-        return true;
-      } catch (e) { console.error('DB Error:', e); return false; }
-    }
-  };
-  console.log('✅ Supabase Connected');
-</script>
+…  };
+  
+  console.log('✅ Supabase Connected & Global Variables Set');
+}
+</script> 
 
 <script type="text/babel">
 const { useState, useEffect } = React;
@@ -284,6 +258,9 @@ function ExpiryBadge({ expiryDate }) {
 }
 
 function App() {
+  // ✅ الوصول للمتغيرات العالمية داخل React/Babel scope
+  const supabase = window.supabaseClient;
+  const db = window.db;
   const [currentTab, setCurrentTab] = useState('shop');
   const [adminTab, setAdminTab] = useState('suppliers');
   
